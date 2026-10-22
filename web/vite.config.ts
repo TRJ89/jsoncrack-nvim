@@ -74,17 +74,16 @@ function reaflowWorkerAsset() {
 }
 
 export default defineConfig(({ mode }) => {
-  if (mode !== "renderer-test") {
-    throw new Error("The renderer-test Vite config only builds its isolated browser fixture.");
-  }
+  const rendererTest = mode === "renderer-test";
+  const root = rendererTest ? resolve(webRoot, "tests/renderer") : webRoot;
 
   return {
-    root: resolve(webRoot, "tests/renderer"),
+    root,
     base: "/",
     publicDir: false,
     plugins: [reaflowWorkerAsset(), react()],
     build: {
-      outDir: resolve(webRoot, ".renderer-dist"),
+      outDir: rendererTest ? resolve(webRoot, ".renderer-dist") : resolve(webRoot, "../dist"),
       emptyOutDir: true,
       sourcemap: false,
     },

@@ -6,6 +6,7 @@ web/node_modules/
 web/.renderer-dist/
 web/test-results/
 web/playwright-report/
+.playwright-cli/
 web/tests/__pycache__/
 __pycache__/
 *.py[cod]
