@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Snapshot } from "../src/types";
 import { App } from "../src/App";
 
-const graphControl = vi.hoisted(() => ({ failureJson: null as string | null }));
+const graphControl = vi.hoisted(() => ({
+  failureJson: null as string | null,
+  failNextJson: null as string | null,
+  mountCount: 0,
+}));
 
 vi.mock("../src/GraphView", async () => {
   const React = await import("react");
@@ -20,9 +24,11 @@ vi.mock("../src/GraphView", async () => {
       onRendered?: () => void;
       onRenderError?: (message: string) => void;
     }) => {
+      const [mountId] = React.useState(() => ++graphControl.mountCount);
       const tooLarge = nodeCount(JSON.parse(props.json)) > 1500;
       React.useEffect(() => {
-        if (graphControl.failureJson === props.json) {
+        if (graphControl.failureJson === props.json || graphControl.failNextJson === props.json) {
+          if (graphControl.failNextJson === props.json) graphControl.failNextJson = null;
           props.onRenderError?.("Simulated renderer failure");
         } else if (!tooLarge) {
           props.onRendered?.();
@@ -36,7 +42,7 @@ vi.mock("../src/GraphView", async () => {
             : null;
       return React.createElement(
         "div",
-        { "data-testid": "graph", "data-json": props.json },
+        { "data-testid": "graph", "data-json": props.json, "data-mount-id": mountId },
         message,
       );
     },
@@ -96,6 +102,8 @@ describe("App", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-23T01:00:00.000Z"));
     graphControl.failureJson = null;
+    graphControl.failNextJson = null;
+    graphControl.mountCount = 0;
     window.history.replaceState({}, "", "/#token=" + "a".repeat(64));
   });
 
@@ -171,6 +179,48 @@ describe("App", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("Simulated renderer failure");
     expect(screen.getByTestId("last-rendered")).toHaveTextContent("Not rendered yet");
+  });
+
+  it("retries a failed graph for a new revision with the same normalized JSON", async () => {
+    const json = '{"same":true}';
+    graphControl.failNextJson = json;
+    installFetch(
+      jsonResponse(okSnapshot("render-fail", '{ "same": true }'), '"render-fail"'),
+      jsonResponse(okSnapshot("render-retry", '{\n  "same": true\n}'), '"render-retry"'),
+    );
+    render(<App />);
+    await flush();
+
+    expect(screen.getByText(/Graph rendering failed: Simulated renderer failure/)).toBeVisible();
+    expect(screen.getByTestId("graph")).toHaveAttribute("data-json", json);
+    expect(screen.getByTestId("last-rendered")).toHaveTextContent("Not rendered yet");
+    const failedMountId = screen.getByTestId("graph").getAttribute("data-mount-id");
+
+    await nextPoll();
+
+    expect(screen.queryByText(/Graph rendering failed: Simulated renderer failure/)).not.toBeInTheDocument();
+    expect(screen.getByTestId("graph")).toHaveAttribute("data-json", json);
+    expect(screen.getByTestId("graph").getAttribute("data-mount-id")).not.toBe(failedMountId);
+    expect(screen.getByTestId("last-rendered")).not.toHaveTextContent("Not rendered yet");
+  });
+
+  it("reuses a rendered graph for a later revision with the same normalized JSON", async () => {
+    const json = '{"same":true}';
+    installFetch(
+      jsonResponse(okSnapshot("rendered-a", '{ "same": true }'), '"rendered-a"'),
+      jsonResponse(okSnapshot("rendered-b", '{\n  "same": true\n}'), '"rendered-b"'),
+    );
+    render(<App />);
+    await flush();
+
+    const mountId = screen.getByTestId("graph").getAttribute("data-mount-id");
+    const displayedAt = screen.getByTestId("last-rendered").getAttribute("datetime");
+    expect(screen.getByTestId("graph")).toHaveAttribute("data-json", json);
+
+    await nextPoll();
+
+    expect(screen.getByTestId("graph").getAttribute("data-mount-id")).toBe(mountId);
+    expect(screen.getByTestId("last-rendered").getAttribute("datetime")).toBe(displayedAt);
   });
 
   it("shows the graph node limit as a distinct graph status", async () => {

@@ -208,4 +208,41 @@ describe("createPoller", () => {
 
     expect(events).toEqual([]);
   });
+
+  it("keeps the reconnect request deadline when an aborted request settles late", async () => {
+    const fetchMock = installFetch();
+    let finishFirst: ((value: Response) => void) | undefined;
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishFirst = resolve;
+        }),
+    );
+    fetchMock.mockImplementationOnce(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            "abort",
+            () => reject(new DOMException("Aborted", "AbortError")),
+            { once: true },
+          );
+        }),
+    );
+    const poller = createPoller({ token: "t", onEvent: () => undefined });
+
+    poller.start();
+    const firstSignal = fetchMock.mock.calls[0]?.[1]?.signal;
+    poller.stop();
+    poller.reconnect();
+    const reconnectSignal = fetchMock.mock.calls[1]?.[1]?.signal;
+    await flushPromises();
+
+    expect(firstSignal?.aborted).toBe(true);
+    expect(reconnectSignal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(reconnectSignal?.aborted).toBe(true);
+
+    finishFirst?.(response(goodSnapshot("late"), '"late"'));
+    poller.stop();
+  });
 });

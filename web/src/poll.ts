@@ -185,6 +185,7 @@ export function createPoller(options: {
     const controller = new AbortController();
     currentController = controller;
     let timedOut = false;
+    let attemptTimer: number | undefined;
     let attemptCancel: (() => void) | null = null;
     const headers = new Headers({ Authorization: "Bearer " + options.token });
     if (etag !== null) headers.set("If-None-Match", etag);
@@ -192,11 +193,12 @@ export function createPoller(options: {
     const deadline = new Promise<never>((_resolve, reject) => {
       attemptCancel = () => reject(new DOMException("Request cancelled.", "AbortError"));
       cancelRequest = attemptCancel;
-      requestTimer = window.setTimeout(() => {
+      attemptTimer = window.setTimeout(() => {
         timedOut = true;
         controller.abort();
         reject(new DOMException("Request timed out.", "TimeoutError"));
       }, REQUEST_TIMEOUT_MS);
+      requestTimer = attemptTimer;
     });
 
     try {
@@ -249,7 +251,7 @@ export function createPoller(options: {
       if (!isCurrent(run)) return;
       fail(run, timedOut ? REQUEST_TIMEOUT_MESSAGE : CONNECTION_FAILURE_MESSAGE);
     } finally {
-      clearRequestDeadline();
+      if (requestTimer === attemptTimer) clearRequestDeadline();
       if (currentController === controller) currentController = null;
       if (cancelRequest === attemptCancel) cancelRequest = null;
       scheduleNext(run);

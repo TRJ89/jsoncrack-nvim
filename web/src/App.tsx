@@ -48,12 +48,23 @@ export function App(): ReactElement {
   const [inputProblem, setInputProblem] = useState<InputProblem>(null);
   const [renderProblem, setRenderProblem] = useState<string | null>(null);
   const [graphJson, setGraphJson] = useState<string | null>(null);
+  const [graphGeneration, setGraphGeneration] = useState(0);
   const [lastRenderedAt, setLastRenderedAt] = useState<string | null>(null);
   const graphJsonRef = useRef<string | null>(null);
+  const graphGenerationRef = useRef(0);
   const latestRevisionRef = useRef<string | null>(null);
   const lastGoodRef = useRef<{ revision: string; json: string } | null>(null);
+  const renderFailedRef = useRef(false);
   const eventHandlerRef = useRef<(event: PollEvent) => void>(() => undefined);
   const pollerRef = useRef<ReturnType<typeof createPoller> | null>(null);
+
+  const retryFailedRenderer = useCallback((): void => {
+    if (!renderFailedRef.current) return;
+    renderFailedRef.current = false;
+    setRenderProblem(null);
+    graphGenerationRef.current += 1;
+    setGraphGeneration(graphGenerationRef.current);
+  }, []);
 
   const handleSnapshot = useCallback((snapshot: Snapshot): void => {
     if (latestRevisionRef.current === snapshot.revision) return;
@@ -68,6 +79,7 @@ export function App(): ReactElement {
     const previousGood = lastGoodRef.current;
     if (previousGood?.revision === snapshot.revision) {
       setInputProblem(null);
+      if (previousGood.json === graphJsonRef.current) retryFailedRenderer();
       return;
     }
 
@@ -88,10 +100,13 @@ export function App(): ReactElement {
     setInputProblem(null);
     if (graphJsonRef.current !== result.json) {
       graphJsonRef.current = result.json;
+      renderFailedRef.current = false;
       setGraphJson(result.json);
       setRenderProblem(null);
+    } else {
+      retryFailedRenderer();
     }
-  }, []);
+  }, [retryFailedRenderer]);
 
   eventHandlerRef.current = (event: PollEvent): void => {
     if (event.kind === "connection") {
@@ -104,14 +119,16 @@ export function App(): ReactElement {
     handleSnapshot(event.value);
   };
 
-  const handleRendered = useCallback((json: string): void => {
-    if (graphJsonRef.current !== json) return;
+  const handleRendered = useCallback((json: string, generation: number): void => {
+    if (graphJsonRef.current !== json || graphGenerationRef.current !== generation) return;
+    renderFailedRef.current = false;
     setLastRenderedAt(new Date().toISOString());
     setRenderProblem(null);
   }, []);
 
-  const handleRenderError = useCallback((json: string, message: string): void => {
-    if (graphJsonRef.current !== json) return;
+  const handleRenderError = useCallback((json: string, generation: number, message: string): void => {
+    if (graphJsonRef.current !== json || graphGenerationRef.current !== generation) return;
+    renderFailedRef.current = true;
     setRenderProblem(message || "The graph could not be rendered.");
   }, []);
 
@@ -210,9 +227,10 @@ export function App(): ReactElement {
           </div>
         ) : (
           <GraphView
+            key={graphGeneration}
             json={graphJson}
-            onRendered={() => handleRendered(graphJson)}
-            onRenderError={(message) => handleRenderError(graphJson, message)}
+            onRendered={() => handleRendered(graphJson, graphGeneration)}
+            onRenderError={(message) => handleRenderError(graphJson, graphGeneration, message)}
           />
         )}
       </section>
