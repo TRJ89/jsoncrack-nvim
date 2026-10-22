@@ -214,13 +214,22 @@ class NvimBridge:
         except FileNotFoundError:
             return ""
 
-    def stop_server(self, pid: int, port: int, timeout: float = 2.0) -> float:
-        started = time.monotonic()
-        wait_until(
-            lambda: process_snapshot(pid) is None and not listener_accepts(port),
-            timeout,
-            "owned server process and listener to stop",
-        )
+    def stop_server(
+        self,
+        pid: int,
+        port: int,
+        timeout: float = 2.0,
+        *,
+        started_at: float | None = None,
+    ) -> float:
+        started = time.monotonic() if started_at is None else started_at
+
+        def stopped() -> bool:
+            return process_snapshot(pid) is None and not listener_accepts(port)
+
+        if not stopped():
+            remaining = max(0.0, timeout - (time.monotonic() - started))
+            wait_until(stopped, remaining, "owned server process and listener to stop")
         return time.monotonic() - started
 
     def close(self) -> None:
@@ -295,13 +304,57 @@ class IntegrationLifecycleTests(unittest.TestCase):
         self.assertIsNotNone(processes[0].poll(), "failed bridge construction leaked its owned Neovim process")
         self.assertEqual(descendants(processes[0].pid), [], "failed bridge construction leaked an owned child")
 
+    def test_stop_deadline_includes_time_spent_in_trigger_rpc(self):
+        bridge = object.__new__(NvimBridge)
+        now = [0.0]
+        with (
+            patch.object(time, "monotonic", side_effect=lambda: now[0]),
+            patch.object(sys.modules[__name__], "listener_accepts", return_value=False),
+        ):
+            started_at = time.monotonic()
+            now[0] = 2.1  # Simulate a stop-triggering RPC that overruns the full budget.
+            elapsed = bridge.stop_server(999999, 65534, started_at=started_at)
+
+        self.assertEqual(started_at, 0.0)
+        self.assertEqual(elapsed, 2.1)
+        with self.assertRaises(AssertionError):
+            self.assertLessEqual(elapsed, 2.0)
+
+    def test_stop_wait_uses_only_time_remaining_after_trigger_rpc(self):
+        bridge = object.__new__(NvimBridge)
+        now = [0.0]
+        wait_budgets: list[float] = []
+
+        def finish_after_wait(predicate, timeout, description):
+            wait_budgets.append(timeout)
+            now[0] += 0.1
+            self.assertTrue(predicate(), description)
+
+        with (
+            patch.object(time, "monotonic", side_effect=lambda: now[0]),
+            patch.object(
+                sys.modules[__name__],
+                "process_snapshot",
+                side_effect=[(999999, "python"), None],
+            ),
+            patch.object(sys.modules[__name__], "listener_accepts", return_value=False),
+            patch.object(sys.modules[__name__], "wait_until", side_effect=finish_after_wait),
+        ):
+            started_at = time.monotonic()
+            now[0] = 1.5  # Simulate the trigger RPC consuming most of the deadline.
+            elapsed = bridge.stop_server(999999, 65534, started_at=started_at)
+
+        self.assertEqual(wait_budgets, [0.5])
+        self.assertAlmostEqual(elapsed, 1.6)
+
     def test_twenty_start_stop_cycles_reap_only_the_owned_child(self):
         bridge = self._bridge()
         for cycle in range(20):
             pid, port = bridge.start_server()
             self.assertTrue(listener_accepts(port), f"cycle {cycle + 1} did not accept")
+            started_at = time.monotonic()
             bridge.command("toggle")
-            elapsed = bridge.stop_server(pid, port)
+            elapsed = bridge.stop_server(pid, port, started_at=started_at)
             self.assertLessEqual(elapsed, 2.0, f"cycle {cycle + 1} took {elapsed:.3f}s")
 
     def test_normal_parent_exit_closes_child_and_listener_within_two_seconds(self):
