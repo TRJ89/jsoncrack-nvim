@@ -19,6 +19,39 @@ _ERROR_MESSAGES = {
 }
 
 
+def _directory_open_flags() -> int:
+    return (
+        getattr(os, "O_PATH", os.O_RDONLY)
+        | os.O_DIRECTORY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+
+
+def _open_parent_directory_chain(path: str) -> tuple[int, tuple[tuple[int, int], ...]]:
+    """Open path parents from root and return their descriptor and identities."""
+    parts = [part for part in path.split(os.path.sep) if part]
+    if not parts:
+        raise OSError(errno.EINVAL, "path does not name a file")
+
+    flags = _directory_open_flags()
+    directory_fd = os.open(os.path.sep, flags)
+    identities = []
+    try:
+        root_info = os.fstat(directory_fd)
+        identities.append((root_info.st_dev, root_info.st_ino))
+        for component in parts[:-1]:
+            child_fd = os.open(component, flags, dir_fd=directory_fd)
+            os.close(directory_fd)
+            directory_fd = child_fd
+            info = os.fstat(directory_fd)
+            identities.append((info.st_dev, info.st_ino))
+        return directory_fd, tuple(identities)
+    except BaseException:
+        os.close(directory_fd)
+        raise
+
+
 class _SnapshotFailure(Exception):
     def __init__(self, code: str):
         super().__init__(code)
@@ -38,6 +71,9 @@ class Target:
     format: str
     display_name: str
     _requested_path: str = field(init=False, repr=False, compare=False)
+    _parent_identities: tuple[tuple[int, int], ...] = field(
+        init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.path, str) or not os.path.isabs(self.path):
@@ -46,8 +82,13 @@ class Target:
             raise ValueError("target path is invalid")
         if self.format not in ("json", "yaml"):
             raise ValueError("target format must be json or yaml")
-        if not isinstance(self.display_name, str) or not self.display_name:
-            raise ValueError("display name must not be empty")
+        if (
+            not isinstance(self.display_name, str)
+            or not self.display_name
+            or "/" in self.display_name
+            or "\x00" in self.display_name
+        ):
+            raise ValueError("display name must be a basename")
 
         requested_path = self.path
         try:
@@ -57,8 +98,16 @@ class Target:
         if resolved_path == os.path.sep:
             raise ValueError("target path must name a file")
 
+        try:
+            parent_fd, parent_identities = _open_parent_directory_chain(resolved_path)
+        except OSError:
+            raise ValueError("target parent path cannot be opened safely") from None
+        else:
+            os.close(parent_fd)
+
         object.__setattr__(self, "_requested_path", requested_path)
         object.__setattr__(self, "path", resolved_path)
+        object.__setattr__(self, "_parent_identities", parent_identities)
 
 
 class SnapshotStore:
@@ -138,12 +187,6 @@ class SnapshotStore:
         if not parts:
             raise _SnapshotFailure("FILE_UNAVAILABLE")
 
-        directory_flags = (
-            getattr(os, "O_PATH", os.O_RDONLY)
-            | os.O_DIRECTORY
-            | os.O_NOFOLLOW
-            | getattr(os, "O_CLOEXEC", 0)
-        )
         file_flags = (
             os.O_RDONLY
             | os.O_NOFOLLOW
@@ -151,19 +194,14 @@ class SnapshotStore:
             | getattr(os, "O_CLOEXEC", 0)
         )
         try:
-            directory_fd = os.open(os.path.sep, directory_flags)
+            directory_fd, identities = _open_parent_directory_chain(self.target.path)
         except OSError as exc:
             raise self._open_failure(exc) from None
+        if identities != self.target._parent_identities:
+            os.close(directory_fd)
+            raise _SnapshotFailure("TARGET_CHANGED")
 
         try:
-            for component in parts[:-1]:
-                try:
-                    child_fd = os.open(component, directory_flags, dir_fd=directory_fd)
-                except OSError as exc:
-                    raise self._open_failure(exc) from None
-                os.close(directory_fd)
-                directory_fd = child_fd
-
             try:
                 return os.open(parts[-1], file_flags, dir_fd=directory_fd)
             except OSError as exc:

@@ -187,6 +187,69 @@ class SnapshotStoreTests(unittest.TestCase):
         self.assertEqual(snapshot["error"]["code"], "TARGET_CHANGED")
         self.assertNotIn("fixture-secret-do-not-leak", json.dumps(snapshot))
 
+    def test_parent_replacement_by_regular_directory_is_rejected(self):
+        parent = self.root / "watched"
+        parent.mkdir()
+        target = parent / "target.json"
+        target.write_bytes(b'{"initial":true}')
+        store = SnapshotStore(Target(str(target), "json", "target.json"))
+
+        parent.rename(self.root / "watched-original")
+        parent.mkdir()
+        (parent / "target.json").write_text(
+            '{"secret":"fixture-secret-do-not-leak"}', encoding="utf-8"
+        )
+
+        snapshot = store.read()
+
+        self.assertEqual(snapshot["status"], "error")
+        self.assertEqual(snapshot["error"]["code"], "TARGET_CHANGED")
+        self.assertNotIn("fixture-secret-do-not-leak", json.dumps(snapshot))
+
+    def test_parent_replacement_during_read_is_rejected(self):
+        parent = self.root / "racing"
+        parent.mkdir()
+        target = parent / "target.json"
+        target.write_bytes(b'{"initial":true}')
+        store = SnapshotStore(Target(str(target), "json", "target.json"))
+        import server.snapshot as snapshot_module
+
+        original_read = snapshot_module.os.read
+        replaced = False
+
+        def replace_parent_after_read(fd, size):
+            nonlocal replaced
+            content = original_read(fd, size)
+            if not replaced:
+                replaced = True
+                parent.rename(self.root / "racing-original")
+                parent.mkdir()
+                (parent / "target.json").write_text(
+                    '{"secret":"fixture-secret-do-not-leak"}', encoding="utf-8"
+                )
+            return content
+
+        snapshot_module.os.read = replace_parent_after_read
+        try:
+            snapshot = store.read()
+        finally:
+            snapshot_module.os.read = original_read
+
+        self.assertTrue(replaced)
+        self.assertEqual(snapshot["status"], "error")
+        self.assertEqual(snapshot["error"]["code"], "TARGET_CHANGED")
+        self.assertNotIn("fixture-secret-do-not-leak", json.dumps(snapshot))
+
+    def test_display_name_must_be_a_linux_basename_but_keeps_valid_characters(self):
+        for display_name in (str(self.path), "folder/name.json", "bad\x00name.json"):
+            with self.subTest(display_name=display_name):
+                with self.assertRaises(ValueError):
+                    Target(str(self.path), "json", display_name)
+
+        valid_name = "日本語 quotes'\" " + chr(92) + "name.json"
+        target = Target(str(self.path), "json", valid_name)
+        self.assertEqual(target.display_name, valid_name)
+
     def test_fifo_and_directory_replacements_fail_without_blocking(self):
         fifo = self.root / "fifo.json"
         fifo.write_bytes(b"old")
