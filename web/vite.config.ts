@@ -14,7 +14,7 @@ const REAFLOW_VERSION = "5.4.1";
 const WORKER_DATA_URL =
   /new URL\("data:application\/javascript;base64,([A-Za-z0-9+/]+={0,2})", self\.location\)/g;
 const MODIFIED_WORKER_NOTICE =
-  "/* Derived from Reaflow 5.4.1 dist/index.js. The build emits this embedded ELK worker as a same-origin asset for the approved CSP. Reaflow is licensed under Apache-2.0; see the Reaflow license in the distribution. */";
+  "/* Derived from Reaflow 5.4.1 dist/index.js; embedded bytes match elkjs@0.10.0/lib/elk-worker.min.js (Git blob SHA-1 aefee8891cabdaf247410197304c1e4bee3cdb14). Reaflow: Apache-2.0; embedded worker: EPL-2.0. See dist/THIRD-PARTY-NOTICES.md for source availability and license texts. */";
 
 function reaflowWorkerAsset() {
   if (reaflowPackage.version !== REAFLOW_VERSION) {

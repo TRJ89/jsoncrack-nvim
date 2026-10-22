@@ -1,0 +1,142 @@
+*jsoncrack.txt*  Preview saved JSON and YAML buffers with JSON Crack
+
+             JSONCRACK PREVIEW FOR NEOVIM
+
+==============================================================================
+CONTENTS                                                    *jsoncrack-contents*
+
+  1. Overview .................................... |jsoncrack-overview|
+  2. Requirements .............................. |jsoncrack-requirements|
+  3. Commands .................................. |jsoncrack-commands|
+  4. Buffer and browser behavior ............... |jsoncrack-behavior|
+  5. Input support and limits .................. |jsoncrack-input|
+  6. Troubleshooting ........................... |jsoncrack-troubleshooting|
+  7. Development ............................... |jsoncrack-development|
+
+==============================================================================
+1. OVERVIEW                                                   *jsoncrack-overview*
+
+JsonCrack Preview opens the saved contents of one JSON or YAML buffer in the
+official JSON Crack graph view in the operating system's default browser.
+Saving the file updates the page automatically. The plugin and its browser
+assets run locally.
+
+Supported use is a Linux desktop with Neovim 0.11 or newer, Python 3.10 or
+newer available as python3, and LazyVim/lazy.nvim. Node.js, npm, pip, an
+install-time build, and a network connection are not required at runtime.
+
+No setup() call is needed. Install the source checkout with lazy.nvim's local
+dir option. A working example is in the repository README.
+
+==============================================================================
+2. REQUIREMENTS                                           *jsoncrack-requirements*
+
+The target must be a saved, readable regular file named with .json, .yaml, or
+.yml. JSONC and other file types are not supported. Headless Neovim, SSH
+sessions, more than one preview in a Neovim process, following a renamed
+buffer, and stopping when a browser tab closes are outside this MVP's scope.
+
+The server binds to 127.0.0.1 and serves the checked-in dist/ assets. The
+browser uses a per-session token and reads only the selected file. The plugin
+does not send preview data to an external service.
+
+==============================================================================
+3. COMMANDS                                                 *jsoncrack-commands*
+
+                                                        *:JsonCrackPreviewToggle*
+:JsonCrackPreviewToggle
+    Start a preview for the current buffer. If a preview session is already
+    running, stop it regardless of which buffer is current.
+
+                                                          *:JsonCrackPreviewOpen*
+:JsonCrackPreviewOpen
+    Start a preview when none is running. If the same target is already
+    running, ask the default browser to open its URL again. If a different
+    target is active, stop it first. Browser tab reuse is not guaranteed.
+
+                                                          *:JsonCrackPreviewStop*
+:JsonCrackPreviewStop
+    Stop the current preview server. Any open tab remains open and reports
+    that it cannot reconnect.
+
+A LazyVim configuration may map <leader>jp to
+:JsonCrackPreviewToggle. The plugin does not set or override that mapping by
+itself.
+
+==============================================================================
+4. BUFFER AND BROWSER BEHAVIOR                          *jsoncrack-behavior*
+
+The preview uses the saved file on disk. If the target buffer has unsaved
+changes, Neovim reports that the current edits are excluded. Write the file
+with :write; the page polls every 500 ms and updates without a reload. A new
+unnamed file must be saved before it can be previewed.
+
+The server stops when the target is no longer displayed by any Neovim window,
+when the target is unloaded, wiped, or renamed, when Stop or Toggle is used,
+or when Neovim exits. Closing a browser tab does not stop the server. Use
+:JsonCrackPreviewOpen to show it again, or use <leader>jp twice: the first
+press stops the old session and the second starts a new one.
+
+The page shows the file name, format, connection/parse status, and last
+successful render time. It uses the official JSON Crack controls for graph
+navigation. Parse and render errors are shown in the browser; startup and
+process errors are reported in Neovim.
+
+==============================================================================
+5. INPUT SUPPORT AND LIMITS                                  *jsoncrack-input*
+
+Input is limited to 1 MiB (1,048,576 bytes), including a UTF-8 BOM. UTF-8 is
+required; a leading UTF-8 BOM is removed. Maximum nesting depth is 100, with
+the root container counted as depth 1. Graphs are limited to 1,500 rendered
+nodes; larger inputs show an explicit error instead of a partial graph.
+
+JSON accepts standard objects, arrays, strings, finite numbers, booleans, and
+null. Comments, trailing commas, duplicate keys, multiple roots, empty input,
+unsafe integers, and non-finite numbers are rejected. Decimal fractions use
+JavaScript number precision.
+
+YAML accepts one YAML 1.2 Core document with string mapping keys, sequences,
+strings, finite numbers, booleans, and null. Quoted/multiline strings and flow
+collections are supported. Multiple documents, YAML 1.1 directives, custom
+or explicit tags, anchors, aliases, non-string or duplicate keys, the merge
+key <<, and non-finite numbers are rejected. Values such as yes, no, and
+date-like scalars are strings under YAML 1.2 Core. Empty/comment-only YAML is
+shown as an empty document; explicit null and ~ are null values.
+
+The measured performance target is a foreground browser, a local file of at
+most 100 KiB, at most 300 rendered nodes, and nearest-rank p95 <= 1,000 ms
+across 20 saves. The validation fixture measured p95 526.674 ms in Playwright
+Chromium 156.0.8078.4 and 911.385 ms in Playwright Firefox 157.0 on a headed
+virtual X11 desktop. This is not a guarantee for larger inputs or background
+tabs.
+
+==============================================================================
+6. TROUBLESHOOTING                                *jsoncrack-troubleshooting*
+
+- Save a named JSON/YAML file before starting a preview.
+- Review the reported syntax or supported-subset error. A later valid save
+  recovers the view.
+- Check python3 --version and confirm the checkout contains server/ and
+  dist/. Set lazy.nvim's dir to the repository root.
+- Use a Linux desktop with a default browser and working vim.ui.open. Remote
+  and headless sessions are unsupported.
+- If a stopped tab cannot reconnect, start a new session from Neovim.
+
+==============================================================================
+7. DEVELOPMENT                                          *jsoncrack-development*
+
+Node.js 22.19.0 and npm 10.9.3 are used to build and test the web UI. The Lua
+tests use plenary.nvim checked out as a sibling at ../plenary.nvim. Development
+tools include stylua 2.6.0, selene 0.32.0, and Playwright 1.64.1 with Chromium
+and Firefox installed.
+
+Run make lint, make test, make build, make verify-dist, or make check from
+the repository root. The complete test and check targets require the web
+runtime and Playwright browsers; the preview itself does not.
+
+The project license is in LICENSE. Generated dependency notices and exact
+license texts are in dist/THIRD-PARTY-NOTICES.md, dist/THIRD-PARTY-NOTICES.json,
+and dist/licenses/.
+
+==============================================================================
+vim:tw=78:ts=8:noet:ft=help:norl:

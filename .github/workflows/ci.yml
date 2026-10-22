@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Full check (Neovim 0.11.6 / Python 3.10)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@v4
+        with:
+          path: jsoncrack-nvim
+
+      - name: Check out plenary.nvim beside the plugin
+        uses: actions/checkout@v4
+        with:
+          repository: nvim-lua/plenary.nvim
+          ref: 74b06c6c75e4eeb3108ec01852001636d85a932b
+          path: plenary.nvim
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.19.0"
+          cache: npm
+          cache-dependency-path: jsoncrack-nvim/web/package-lock.json
+
+      - name: Pin npm
+        run: npm install --global npm@10.9.3
+
+      - name: Set up Neovim 0.11.6
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: v0.11.6
+
+      - name: Install and verify Stylua 2.6.0
+        uses: JohnnyMorganz/stylua-action@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: 2.6.0
+          args: --version
+
+      - name: Set up Rust for Selene
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Selene 0.32.0
+        run: |
+          cargo install --locked --version 0.32.0 selene
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Verify pinned toolchain
+        run: |
+          test "$(node --version)" = "v22.19.0"
+          test "$(npm --version)" = "10.9.3"
+          test "$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')" = "3.10"
+          test "$(nvim --version | head -n 1)" = "NVIM v0.11.6"
+          test "$(stylua --version)" = "stylua 2.6.0"
+          test "$(selene --version)" = "selene 0.32.0"
+
+      - name: Install web dependencies
+        run: npm --prefix web ci
+        working-directory: jsoncrack-nvim
+
+      - name: Install Playwright browsers and system dependencies
+        run: npx --prefix web playwright install --with-deps chromium firefox
+        working-directory: jsoncrack-nvim
+
+      - name: Run full check
+        run: make check
+        working-directory: jsoncrack-nvim
+
+  compatibility:
+    name: Plugin compatibility (Neovim ${{ matrix.neovim }} / Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim: [stable, nightly]
+        python: ["3.10", "3.x"]
+    continue-on-error: ${{ matrix.neovim == 'nightly' }}
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@v4
+        with:
+          path: jsoncrack-nvim
+
+      - name: Check out plenary.nvim beside the plugin
+        uses: actions/checkout@v4
+        with:
+          repository: nvim-lua/plenary.nvim
+          ref: 74b06c6c75e4eeb3108ec01852001636d85a932b
+          path: plenary.nvim
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Set up Neovim ${{ matrix.neovim }}
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.neovim }}
+
+      - name: Run Python, Lua, and process integration tests
+        run: make test-python test-lua test-integration
+        working-directory: jsoncrack-nvim

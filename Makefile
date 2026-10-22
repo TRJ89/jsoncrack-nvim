@@ -1,11 +1,19 @@
-.PHONY: lint-lua test-lua test-python test-web test-renderer test-integration test-e2e test
+.PHONY: lint lint-lua lint-web lint-python test-lua test-python test-web test-renderer test-integration test-e2e test build verify-dist check
 
 LUA_SOURCES := lua/jsoncrack plugin/jsoncrack.lua tests/lua tests/minimal_init.lua
 TEST_FILE ?=
 
+lint: lint-lua lint-web lint-python
+
 lint-lua:
 	stylua --check $(LUA_SOURCES)
 	selene $(LUA_SOURCES)
+
+lint-web:
+	env -u NO_COLOR -u FORCE_COLOR npm --prefix web run typecheck
+
+lint-python:
+	python3 -m compileall -q server scripts tests
 
 test-lua:
 	@if [ -n "$(TEST_FILE)" ]; then \
@@ -18,16 +26,23 @@ test-python:
 	python3 -m unittest discover -s tests/python -v
 
 test-web:
-	npm --prefix web run test
+	env -u NO_COLOR -u FORCE_COLOR npm --prefix web run test
+	env -u NO_COLOR -u FORCE_COLOR node --test web/scripts/licenses.test.mjs
 
 test-renderer:
-	npm --prefix web run test:renderer
+	env -u NO_COLOR -u FORCE_COLOR npm --prefix web run test:renderer
 
 test-integration:
 	python3 -m unittest discover -s tests/integration -v
 
 test-e2e:
-	npm --prefix web run test:e2e
+	env -u NO_COLOR -u FORCE_COLOR npm --prefix web run test:e2e
+
+build:
+	env -u NO_COLOR -u FORCE_COLOR npm --prefix web run build
+
+verify-dist: build
+	python3 scripts/check_dist.py --check-tracked
 
 test:
 	$(MAKE) --no-print-directory test-python
@@ -36,3 +51,8 @@ test:
 	$(MAKE) --no-print-directory test-renderer
 	$(MAKE) --no-print-directory test-integration
 	$(MAKE) --no-print-directory test-e2e
+
+check:
+	$(MAKE) --no-print-directory lint
+	$(MAKE) --no-print-directory test
+	$(MAKE) --no-print-directory verify-dist

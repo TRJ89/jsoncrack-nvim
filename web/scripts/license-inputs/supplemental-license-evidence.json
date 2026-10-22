@@ -1,0 +1,82 @@
+{
+  "mitTemplate": {
+    "file": "SPDX-v3.29.0-MIT.txt",
+    "license": "MIT",
+    "source": "SPDX License List v3.29.0, text/MIT.txt",
+    "sourceUrl": "https://github.com/spdx/license-list-data/blob/v3.29.0/text/MIT.txt",
+    "sourceCommit": "31ba1a50e5397e00a304dbadc76531740e89ee48",
+    "sha256": "9f420f8e43bbd65bddb84463a5f96db1f030fc7ecd4f0b35523b9610e8c3fa21",
+    "note": "Canonical MIT terms used as a shared template only where the exact pinned upstream package source provides no standalone license text. The upstream package sources do not supply the year or copyright holder placeholders in this template."
+  },
+  "packages": {
+    "@reaviz/react-use-fuzzy@1.0.3": {
+      "license": "MIT",
+      "author": "Joshua Tonga",
+      "sourceUrl": "https://github.com/reaviz/react-use-fuzzy/tree/816b4efeb8cb027f56fdb9988fa90b8bc608891f",
+      "sourceCommit": "816b4efeb8cb027f56fdb9988fa90b8bc608891f",
+      "manifestSha256": "7ecdde21e0fcf13240639f1935a5964db532c12c266db4a677b7ae15113c1c38",
+      "readmeSha256": "4041e99fa166f7280efe249d757a3da50ccf9afe807d4ed8171923e82be24780",
+      "readmeLicenseStatement": "MIT ©",
+      "note": "The locked npm package is scoped, while the pinned repository manifest names the package react-use-fuzzy. The repository source is attribution evidence and is not proof of an identical npm tarball."
+    },
+    "create-global-state-hook@0.0.2": {
+      "license": "MIT",
+      "author": "Stanislav Termosa",
+      "sourceUrl": "https://github.com/termosa/create-global-state-hook/tree/4088e1c4389ffcdaab5256f46a793c4357c933c4",
+      "sourceCommit": "4088e1c4389ffcdaab5256f46a793c4357c933c4",
+      "manifestSha256": "51d76912aee624e22a48c1ff1a02652fbb843e80dba08eae4ecd8f3dda61458e",
+      "readmeSha256": "fe1f4576fd99b323e26b3341b1ea0a81ef9390e64f096bb7ed992725ed8710d0",
+      "readmeLicenseStatement": null,
+      "note": "The only repository source commit containing version 0.0.2 has no version tag. Its manifest declares MIT and the author; the README and implementation contain no license or copyright statement."
+    },
+    "defaulty@2.1.0": {
+      "license": "MIT",
+      "author": "Fabio Ricali",
+      "sourceUrl": "https://github.com/fabiorc428/defaulty/tree/c76c305de97a62986b452749f7494fe106584834",
+      "sourceCommit": "c76c305de97a62986b452749f7494fe106584834",
+      "manifestSha256": "271e8a0812098d3c7a1494fb8f8e8dc4b2fa557a6f0dee24d3800975874c28d2",
+      "readmeSha256": "2612875ecaf20897b85b8c50854b404b701fbab314e7135205c55c8b4a282f19",
+      "readmeLicenseStatement": "The README states that the package is MIT licensed and names Fabio Ricali as author; it does not provide a license body or copyright line.",
+      "note": "The npm manifest's former fabioricali/defaulty repository URL redirects to the pinned fabiorc428/defaulty repository."
+    },
+    "dotignore@0.1.2": {
+      "license": "MIT",
+      "author": "bradleymeck",
+      "sourceUrl": "https://github.com/bmeck/dotignore/tree/78843a5fea53a838d784743bde4c9470e50a9930",
+      "sourceCommit": "78843a5fea53a838d784743bde4c9470e50a9930",
+      "manifestSha256": "cd1b5a4615c6ea322f58571cedab8ff3f4cbce0e932c1ca560eec1fb17dcf459",
+      "readmeSha256": "465d2cbb5628e39e8f8a866d571a1fdfc48f2445bbcb882074228fe4b64d2d79",
+      "readmeLicenseStatement": "The README declares MIT but provides no license body or copyright line.",
+      "note": "The author value is reproduced from the pinned package manifest."
+    },
+    "use-composed-ref@1.4.0": {
+      "license": "MIT",
+      "author": null,
+      "sourceUrl": "https://github.com/Andarist/use-composed-ref/tree/ea2c9d969f2f90a349f4c99338b806423824cea2",
+      "sourceCommit": "ea2c9d969f2f90a349f4c99338b806423824cea2",
+      "manifestSha256": "7aca967cd00674532aa440baf116aa36681813cb0e8001b873197b48af0d176f",
+      "readmeSha256": "670438fff72de58f258f5a41f172a0c37d8f803263ac2eb017fefaefc1397613",
+      "readmeLicenseStatement": null,
+      "note": "The pinned package manifest declares MIT but has no author field; its README has no license or copyright statement."
+    }
+  },
+  "embeddedWorker": {
+    "name": "Reaflow embedded ELK worker",
+    "reaflowVersion": "5.4.1",
+    "sourcePackage": "elkjs",
+    "sourceVersion": "0.10.0",
+    "sourcePath": "lib/elk-worker.min.js",
+    "license": "EPL-2.0",
+    "payloadSha256": "cda1839e26f82a7ac142692ee813974f8f359987348d21d1f16af8f86ff96e80",
+    "payloadGitBlobSha1": "aefee8891cabdaf247410197304c1e4bee3cdb14",
+    "sourceUrl": "https://github.com/kieler/elkjs/tree/8a4fc2e11c1a184daa156cf563961bd860980c5f",
+    "sourceCommit": "8a4fc2e11c1a184daa156cf563961bd860980c5f",
+    "sourceArchive": "https://github.com/kieler/elkjs/archive/refs/tags/0.10.0.tar.gz",
+    "elkSourceUrl": "https://github.com/eclipse-elk/elk/tree/30035c605c0d45467f673f7b6b263d44dc2632da",
+    "elkSourceCommit": "30035c605c0d45467f673f7b6b263d44dc2632da",
+    "elkSourceArchive": "https://github.com/eclipse-elk/elk/archive/refs/tags/v0.10.0.tar.gz",
+    "licenseFile": "elkjs-0.10.0-LICENSE.md",
+    "licenseSha256": "611d02c48bb1709980dc43d5a114090045f1c953393875779042f745084269c4",
+    "note": "The worker embedded by Reaflow 5.4.1 matches elkjs 0.10.0 by payload hash. This is separate from the production dependency lock entry elkjs 0.10.2. The elkjs 0.10.0 release is based on ELK 0.10.0; the source archives provide the corresponding worker source and Java source."
+  }
+}

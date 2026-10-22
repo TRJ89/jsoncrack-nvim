@@ -7,6 +7,7 @@ web/.renderer-dist/
 web/test-results/
 web/playwright-report/
 .playwright-cli/
-web/tests/__pycache__/
+.pytest_cache/
+doc/tags
 __pycache__/
 *.py[cod]

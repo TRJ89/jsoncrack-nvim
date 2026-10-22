@@ -14,8 +14,9 @@
     "test:e2e": "playwright test --config playwright.config.ts tests/e2e/preview.spec.ts",
     "test:performance": "JSONCRACK_CHROMIUM_OZONE=x11 playwright test --config playwright.config.ts tests/e2e/performance.spec.ts --headed",
     "test": "vitest run",
+    "test:licenses": "node --test scripts/licenses.test.mjs",
     "typecheck": "tsc --noEmit",
-    "build": "vite build && node scripts/build-manifest.mjs"
+    "build": "vite build && node scripts/build-manifest.mjs && node scripts/licenses.mjs"
   },
   "dependencies": {
     "jsonc-parser": "3.3.1",
