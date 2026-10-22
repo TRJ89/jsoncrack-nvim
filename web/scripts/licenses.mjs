@@ -351,7 +351,11 @@ function markdownNotices(packageRecords, artifacts, evidence) {
     for (const record of supplementalRecords) {
       const source = record.supplementalAttribution;
       const author = source.author ? ` Author: ${source.author}.` : " The pinned manifest has no author field.";
-      const statement = source.readmeLicenseStatement ? ` README statement: ${source.readmeLicenseStatement}` : " The pinned README contains no license or copyright statement.";
+      const statement = source.readmeLicenseStatement === "MIT ©"
+        ? ` README fragment: \`${source.readmeLicenseStatement}\`.`
+        : source.readmeLicenseStatement
+          ? ` README statement: ${source.readmeLicenseStatement}`
+          : " The pinned README contains no license or copyright statement.";
       lines.push(
         `- \`${record.name}@${record.version}\`: [pinned source](${source.sourceUrl}) at \`${source.sourceCommit}\`.${author}${statement} ${source.note}`,
       );

@@ -57,8 +57,8 @@ commands:
   buffer.
 - `:JsonCrackPreviewOpen` starts a preview when none is running. For the same
   target, it asks the default browser to open the existing preview URL again;
-  if another target is active, it stops that preview first. The operating
-  system may open a new tab; existing-tab reuse is not promised.
+  if another target is active, it asks you to stop that preview first. The
+  operating system may open a new tab; existing-tab reuse is not promised.
 - `:JsonCrackPreviewStop` stops the server and leaves any browser tab open.
   That tab will show that it can no longer reconnect.
 
