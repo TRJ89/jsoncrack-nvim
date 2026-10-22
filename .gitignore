@@ -7,3 +7,5 @@ web/.renderer-dist/
 web/test-results/
 web/playwright-report/
 web/tests/__pycache__/
+__pycache__/
+*.py[cod]
