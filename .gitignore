@@ -1,2 +1,9 @@
 AGENTS.md
 .agents/skills/
+
+# Renderer test build, dependencies, and browser artifacts
+web/node_modules/
+web/.renderer-dist/
+web/test-results/
+web/playwright-report/
+web/tests/__pycache__/
