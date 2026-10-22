@@ -10,6 +10,7 @@ import {
 } from "react";
 import { JSONCrack, type GraphData } from "jsoncrack-react";
 import "jsoncrack-react/style.css";
+import "./GraphView.css";
 
 const MAX_RENDERABLE_NODES = 1500;
 const GRAPH_HEIGHT = "600px";
@@ -162,10 +163,34 @@ export function GraphView({
     let firstFrame = 0;
     let secondFrame = 0;
 
-    const completeAfterPaint = (): void => {
-      if (completionQueued) return;
+    const currentGraphIsVisible = (): boolean => {
       const svg = host.querySelector("svg");
-      if (!svg || svg.querySelectorAll("g").length === 0) return;
+      if (!svg || svg.querySelectorAll("g").length === 0) return false;
+      const renderedNodeIds = new Set(
+        Array.from(host.querySelectorAll<SVGForeignObjectElement>(
+          'svg foreignObject[data-id^="node-"]',
+        )).map((node) => node.getAttribute("data-id")),
+      );
+      const visibleGraphNodes = parsed.graph.nodes;
+      if (
+        renderedNodeIds.size !== visibleGraphNodes.length ||
+        visibleGraphNodes.some((node) => !renderedNodeIds.has("node-" + node.id))
+      ) {
+        return false;
+      }
+      const graphSpace = host.querySelector<HTMLElement>(".jsoncrack-space");
+      if (
+        !graphSpace ||
+        window.getComputedStyle(graphSpace).visibility === "hidden" ||
+        window.getComputedStyle(graphSpace).opacity !== "1"
+      ) {
+        return false;
+      }
+      return true;
+    };
+
+    const completeAfterPaint = (): void => {
+      if (completionQueued || !currentGraphIsVisible()) return;
       completionQueued = true;
       firstFrame = window.requestAnimationFrame(() => {
         secondFrame = window.requestAnimationFrame(() => {
@@ -174,6 +199,10 @@ export function GraphView({
             versionRef.current !== version ||
             currentJsonRef.current !== json
           ) {
+            return;
+          }
+          if (!currentGraphIsVisible()) {
+            completionQueued = false;
             return;
           }
           notifyRendered(version);
@@ -200,6 +229,7 @@ export function GraphView({
   return (
     <div
       ref={hostRef}
+      className="graph-view"
       data-testid="graph"
       data-theme="dark"
       style={{ height: GRAPH_HEIGHT, width: "100%" }}

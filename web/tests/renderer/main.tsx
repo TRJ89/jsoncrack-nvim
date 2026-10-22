@@ -32,12 +32,28 @@ function fixture(name: string): string {
       return JSON.stringify('<img src=x onerror="window.__xss=true">');
     case "current-input":
       return JSON.stringify({ stale: Array.from({ length: 100 }, (_, index) => index) });
+    case "collapse-update":
+      return JSON.stringify({
+        group: { nested: { leaf: "hidden" }, peer: "hidden" },
+        updated: "before",
+      });
     default:
       return JSON.stringify("unknown fixture");
   }
 }
 
-type Completion = { phase: "before-change" | "after-change"; json: string };
+type Completion = {
+  phase: "before-change" | "after-change";
+  json: string;
+  opacity: string;
+  renderedNodeCount: number;
+};
+
+declare global {
+  interface Window {
+    __setRendererJson?: (json: string) => void;
+  }
+}
 
 function RendererHarness(): ReactElement {
   const fixtureName = new URLSearchParams(window.location.search).get("case") ?? "string";
@@ -46,8 +62,19 @@ function RendererHarness(): ReactElement {
   const [errors, setErrors] = useState<string[]>([]);
   const [inlineCompletionCount, setInlineCompletionCount] = useState(0);
   const changedRef = useRef(false);
+  const setJsonFromTest = useCallback((nextJson: string) => {
+    changedRef.current = true;
+    setJson(nextJson);
+  }, []);
   const useInlineCallback =
     fixtureName === "inline-empty-callback" || fixtureName === "inline-graph-callback";
+
+  useEffect(() => {
+    window.__setRendererJson = setJsonFromTest;
+    return () => {
+      delete window.__setRendererJson;
+    };
+  }, [setJsonFromTest]);
 
   useEffect(() => {
     if (fixtureName === "error-recovery") {
@@ -64,9 +91,19 @@ function RendererHarness(): ReactElement {
   }, [fixtureName]);
 
   const handleRendered = useCallback(() => {
+    const graph = document.querySelector<HTMLElement>('[data-testid="graph"]');
+    const graphSpace = graph?.querySelector<HTMLElement>(".jsoncrack-space");
+    const renderedNodeCount = graph?.querySelectorAll(
+      'svg foreignObject[data-id^="node-"]',
+    ).length ?? 0;
     setCompletions((current) => [
       ...current,
-      { phase: changedRef.current ? "after-change" : "before-change", json },
+      {
+        phase: changedRef.current ? "after-change" : "before-change",
+        json,
+        opacity: graphSpace ? window.getComputedStyle(graphSpace).opacity : "missing",
+        renderedNodeCount,
+      },
     ]);
   }, [json]);
   const handleRenderError = useCallback((message: string) => {
@@ -84,7 +121,12 @@ function RendererHarness(): ReactElement {
       )}
       <div data-testid="rendered-inputs">
         {completions.map((completion, index) => (
-          <span key={`${completion.phase}-${index}`} data-phase={completion.phase}>
+          <span
+            key={`${completion.phase}-${index}`}
+            data-phase={completion.phase}
+            data-opacity={completion.opacity}
+            data-rendered-node-count={completion.renderedNodeCount}
+          >
             {completion.json}
           </span>
         ))}

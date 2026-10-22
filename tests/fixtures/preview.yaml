@@ -1,0 +1,25 @@
+name: YAML service inventory
+updated: initial
+groups:
+  - title: North
+    items:
+      - id: north-01
+        label: Gateway
+        healthy: true
+      - id: north-02
+        label: Queue
+        healthy: true
+      - id: north-03
+        label: Worker
+        healthy: false
+  - title: South
+    items:
+      - id: south-01
+        label: Gateway
+        healthy: true
+      - id: south-02
+        label: Queue
+        healthy: true
+      - id: south-03
+        label: Worker
+        healthy: true

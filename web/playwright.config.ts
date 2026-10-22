@@ -1,15 +1,25 @@
 import { defineConfig } from "@playwright/test";
 
+const chromiumOzone = process.env.JSONCRACK_CHROMIUM_OZONE;
+
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "renderer.spec.ts",
-  outputDir: "./test-results/renderer",
+  testMatch: ["renderer.spec.ts", "e2e/**/*.spec.ts"],
+  outputDir: "./test-results/playwright",
   reporter: "list",
+  workers: 1,
+  fullyParallel: false,
   timeout: 30_000,
   expect: { timeout: 10_000 },
   use: { baseURL: "http://127.0.0.1:4173" },
   projects: [
-    { name: "chromium", use: { browserName: "chromium" } },
+    {
+      name: "chromium",
+      use: {
+        browserName: "chromium",
+        ...(chromiumOzone ? { launchOptions: { args: ["--ozone-platform=" + chromiumOzone] } } : {}),
+      },
+    },
     { name: "firefox", use: { browserName: "firefox" } },
   ],
   webServer: {

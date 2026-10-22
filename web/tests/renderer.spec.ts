@@ -6,6 +6,7 @@ const loopbackHosts = new Set(["127.0.0.1", "localhost", "::1"]);
 declare global {
   interface Window {
     __cspViolations: string[];
+    __setRendererJson?: (json: string) => void;
   }
 }
 
@@ -71,6 +72,9 @@ test("uses the official dark graph and same-origin layout worker", async ({ page
   await expect(page.getByRole("button", { name: "Fit" })).toBeVisible();
   await expect(page.getByRole("button", { name: "-" })).toBeVisible();
   await expect(page.getByRole("button", { name: "+" })).toBeVisible();
+  await expect.poll(() => visualization.locator(".jsoncrack-space").evaluate((element) =>
+    getComputedStyle(element).transitionDuration,
+  )).toBe("0s");
   await expect.poll(() => visualization.evaluate((element) =>
     getComputedStyle(element).getPropertyValue("--edge-stroke").trim(),
   )).toBe("#444444");
@@ -91,7 +95,7 @@ test("renders number, boolean, and null roots", async ({ page }) => {
     ["null", "null"],
   ]) {
     await openCase(page, name);
-    await expect(page.getByText(value, { exact: true })).toBeVisible();
+    await expect(page.getByTestId("graph").getByText(value, { exact: true })).toBeVisible();
   }
 });
 
@@ -145,4 +149,43 @@ test("only reports render completion for the current input", async ({ page }) =>
   );
   await expect(completedAfterChange).toHaveCount(1);
   await expect(completedAfterChange).toHaveText('"current input"');
+});
+
+test("reports a saved update after remounting a collapsed graph's new layout", async ({ page }) => {
+  await openCase(page, "collapse-update");
+  const graph = page.getByTestId("graph");
+  const completedInputs = page.locator(
+    '[data-testid="rendered-inputs"] [data-phase="before-change"]',
+  );
+  await expect(completedInputs).toHaveCount(1);
+
+  const initialNodeCount = await graph.locator(
+    'svg foreignObject[data-id^="node-"]',
+  ).count();
+  await graph.getByRole("button", { name: "Collapse" }).first().click();
+  await expect.poll(() => graph.locator(
+    'svg foreignObject[data-id^="node-"]',
+  ).count()).toBeLessThan(initialNodeCount);
+  const collapsedNodeCount = await graph.locator(
+    'svg foreignObject[data-id^="node-"]',
+  ).count();
+
+  await page.evaluate(() => {
+    window.__setRendererJson?.(JSON.stringify({
+      group: { nested: { leaf: "hidden" }, peer: "hidden" },
+      updated: "after",
+    }));
+  });
+
+  const completedUpdate = page.locator(
+    '[data-testid="rendered-inputs"] [data-phase="after-change"]',
+  );
+  await expect(completedUpdate).toHaveCount(1);
+  await expect(graph.locator('[data-key="updated: after"]')).toBeVisible();
+  expect(await graph.locator('svg foreignObject[data-id^="node-"]').count()).toBe(initialNodeCount);
+  expect(Number(await completedUpdate.getAttribute("data-rendered-node-count"))).toBe(
+    initialNodeCount,
+  );
+  expect(collapsedNodeCount).toBeLessThan(initialNodeCount);
+  await expect(completedUpdate).toHaveAttribute("data-opacity", "1");
 });

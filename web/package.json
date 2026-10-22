@@ -10,7 +10,9 @@
   },
   "scripts": {
     "build:renderer-test": "vite build --mode renderer-test",
-    "test:renderer": "playwright test",
+    "test:renderer": "playwright test tests/renderer.spec.ts",
+    "test:e2e": "playwright test --config playwright.config.ts tests/e2e/preview.spec.ts",
+    "test:performance": "JSONCRACK_CHROMIUM_OZONE=x11 playwright test --config playwright.config.ts tests/e2e/performance.spec.ts --headed",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "vite build && node scripts/build-manifest.mjs"
@@ -26,6 +28,7 @@
     "@playwright/test": "1.64.1",
     "@testing-library/jest-dom": "6.8.0",
     "@testing-library/react": "16.3.0",
+    "@types/node": "24.10.1",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "6.1.2",
