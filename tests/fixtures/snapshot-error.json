@@ -1,0 +1,11 @@
+{
+  "protocol": 1,
+  "revision": "fixture-revision-error",
+  "format": "yaml",
+  "display_name": "snapshot-error.yaml",
+  "status": "error",
+  "error": {
+    "code": "FILE_UNAVAILABLE",
+    "message": "The target file is unavailable."
+  }
+}

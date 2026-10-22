@@ -1,0 +1,8 @@
+{
+  "protocol": 1,
+  "revision": "fixture-revision-ok",
+  "format": "json",
+  "display_name": "snapshot-ok.json",
+  "status": "ok",
+  "text": "{\"name\":\"example\"}\n"
+}
