@@ -11,12 +11,15 @@
   "scripts": {
     "build:renderer-test": "vite build --mode renderer-test",
     "test:renderer": "playwright test",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "jsoncrack-react": "1.0.5",
+    "jsonc-parser": "3.3.1",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
@@ -24,6 +27,7 @@
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "6.1.2",
     "typescript": "7.0.2",
-    "vite": "8.3.5"
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
   }
 }
