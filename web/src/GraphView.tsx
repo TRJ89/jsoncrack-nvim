@@ -88,6 +88,9 @@ export function GraphView({
   }
   const version = versionRef.current;
   const hostRef = useRef<HTMLDivElement>(null);
+  const onRenderedRef = useRef(onRendered);
+  onRenderedRef.current = onRendered;
+  const renderedVersionRef = useRef<number | null>(null);
   const parseErrorVersionRef = useRef(-1);
   const [parsed, setParsed] = useState<GraphState | null>(null);
   const [parseError, setParseError] = useState<{
@@ -95,6 +98,11 @@ export function GraphView({
     message: string;
   } | null>(null);
   const emptyRoot = useMemo(() => getEmptyRoot(json), [json]);
+  const notifyRendered = useCallback((completedVersion: number) => {
+    if (renderedVersionRef.current === completedVersion) return;
+    renderedVersionRef.current = completedVersion;
+    onRenderedRef.current?.();
+  }, []);
 
   const handleParse = useCallback(
     (graph: GraphData) => {
@@ -133,9 +141,9 @@ export function GraphView({
 
   useEffect(() => {
     if (emptyRoot && versionRef.current === version && currentJsonRef.current === json) {
-      onRendered?.();
+      notifyRendered(version);
     }
-  }, [emptyRoot, json, onRendered, version]);
+  }, [emptyRoot, json, notifyRendered, version]);
 
   useEffect(() => {
     if (
@@ -168,7 +176,7 @@ export function GraphView({
           ) {
             return;
           }
-          onRendered?.();
+          notifyRendered(version);
         });
       });
     };
@@ -185,7 +193,7 @@ export function GraphView({
       window.cancelAnimationFrame(firstFrame);
       window.cancelAnimationFrame(secondFrame);
     };
-  }, [json, onRendered, parsed, version]);
+  }, [json, notifyRendered, parsed, version]);
 
   const currentError = parseError?.version === version ? parseError : null;
 

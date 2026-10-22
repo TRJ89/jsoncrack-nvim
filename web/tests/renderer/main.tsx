@@ -20,6 +20,10 @@ function fixture(name: string): string {
       return JSON.stringify({});
     case "empty-array":
       return JSON.stringify([]);
+    case "inline-empty-callback":
+      return JSON.stringify({});
+    case "inline-graph-callback":
+      return JSON.stringify({ value: "rendered" });
     case "limit":
       return JSON.stringify(Array.from({ length: 1501 }, (_, index) => index));
     case "error-recovery":
@@ -40,7 +44,10 @@ function RendererHarness(): ReactElement {
   const [json, setJson] = useState(() => fixture(fixtureName));
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
+  const [inlineCompletionCount, setInlineCompletionCount] = useState(0);
   const changedRef = useRef(false);
+  const useInlineCallback =
+    fixtureName === "inline-empty-callback" || fixtureName === "inline-graph-callback";
 
   useEffect(() => {
     if (fixtureName === "error-recovery") {
@@ -65,10 +72,16 @@ function RendererHarness(): ReactElement {
   const handleRenderError = useCallback((message: string) => {
     setErrors((current) => [...current, message]);
   }, []);
+  const onRendered = useInlineCallback
+    ? () => setInlineCompletionCount((current) => current + 1)
+    : handleRendered;
 
   return (
     <main>
-      <GraphView json={json} onRendered={handleRendered} onRenderError={handleRenderError} />
+      <GraphView json={json} onRendered={onRendered} onRenderError={handleRenderError} />
+      {useInlineCallback && (
+        <div data-testid="inline-completion-count">{inlineCompletionCount}</div>
+      )}
       <div data-testid="rendered-inputs">
         {completions.map((completion, index) => (
           <span key={`${completion.phase}-${index}`} data-phase={completion.phase}>

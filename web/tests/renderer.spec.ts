@@ -40,6 +40,20 @@ test.afterEach(async ({ page }) => {
 
 const openCase = (page: Page, name: string) => page.goto(`/?case=${name}`);
 
+const waitForAnimationFrames = (page: Page, count: number) =>
+  page.evaluate((frameCount) => new Promise<void>((resolve) => {
+    let remaining = frameCount;
+    const nextFrame = (): void => {
+      remaining -= 1;
+      if (remaining === 0) {
+        resolve();
+      } else {
+        window.requestAnimationFrame(nextFrame);
+      }
+    };
+    window.requestAnimationFrame(nextFrame);
+  }), count);
+
 test("renders a primitive without treating it as source code", async ({ page }) => {
   await openCase(page, "string");
   await expect(page.getByText("hello", { exact: true })).toBeVisible();
@@ -86,6 +100,22 @@ test("shows a clear label for empty objects and arrays", async ({ page }) => {
   await expect(page.getByRole("status")).toContainText("Empty JSON object");
   await openCase(page, "empty-array");
   await expect(page.getByRole("status")).toContainText("Empty JSON array");
+});
+
+test("does not repeat empty-root completion for an inline state-updating callback", async ({ page }) => {
+  await openCase(page, "inline-empty-callback");
+  const count = page.getByTestId("inline-completion-count");
+  await expect.poll(async () => Number(await count.textContent())).toBeGreaterThan(0);
+  await waitForAnimationFrames(page, 6);
+  await expect(count).toHaveText("1");
+});
+
+test("does not repeat graph completion for an inline state-updating callback", async ({ page }) => {
+  await openCase(page, "inline-graph-callback");
+  const count = page.getByTestId("inline-completion-count");
+  await expect.poll(async () => Number(await count.textContent())).toBeGreaterThan(0);
+  await waitForAnimationFrames(page, 6);
+  await expect(count).toHaveText("1");
 });
 
 test("shows the renderer limit for an oversized array", async ({ page }) => {
