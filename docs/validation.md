@@ -10,7 +10,7 @@ here.
 
 | ID | Result and evidence |
 | --- | --- |
-| AC01 | **PENDING focused LazyVim TTY verification.** The final README entry loaded, and the configured key, all three commands, and `:help jsoncrack` resolved in the isolated smoke. The helper is rerunning the actual key/Open/Stop assertions with its Python-only PATH and will add a result after clean exit is confirmed. Separately, the offline runtime run verified that Neovim could not resolve `node`, `nodejs`, `npm`, or `npx`; 6 JSON/YAML/CSP E2E cases passed. The Playwright controller itself used Node to drive that test. |
+| AC01 | **PASS.** The final README entry loaded in isolated LazyVim 16.0.1; its mapping, all three commands, and `:help jsoncrack` resolved. In a real TTY run with Neovim 0.11.6, the actual `<Space>jp` key opened the saved JSON in the isolated OS default Chromium handler, `JsonCrackPreviewOpen` dispatched the same preview URL again, and `JsonCrackPreviewStop` closed the server. The browser showed the graph at opacity 1; Neovim exited 0 and cleanup found no owned processes or listening preview port. Neovim could not resolve `node`, `nodejs`, `npm`, or `npx`. Separately, 6 JSON/YAML/CSP offline E2E cases passed; their Playwright controller used Node as test tooling. |
 | AC02 | **PASS.** `web/tests/parse.test.ts`, `web/tests/renderer.spec.ts`, and the JSON E2E case cover objects, arrays, scalar roots, empty containers, visible graph text, and saved updates. |
 | AC03 | **PASS.** YAML 1.2 normalization is covered by `web/tests/parse.test.ts`; the YAML case in `web/tests/e2e/preview.spec.ts` verifies rendering and saved updates through the production preview path. |
 | AC04 | **PASS.** Parser tests cover malformed/commented JSON, duplicate keys, invalid JSON values, unsupported YAML tags/aliases/multiple documents, and input errors. The renderer keeps the last valid graph and exposes the parse error; the E2E recovery case confirms the next valid save renders. |
@@ -34,7 +34,7 @@ here.
 | AC22 | **PASS.** Renderer and E2E tests pass hostile HTML/script-like values as text; the E2E case asserts CSP and that no script execution or external request occurs. |
 | AC23 | **PASS.** The 6-case offline E2E run executed inside a `bwrap --unshare-net` network namespace with loopback available and no external route. It covered JSON saved updates, YAML saved updates, and CSP/no-external-request checks in Chromium and Firefox. The test's browser request observer also confirmed no external page requests. |
 | AC24 | **PASS.** Poller tests stop immediately on authorization failure, ignore responses arriving after stop, and enforce the reconnect deadline. App tests show the stopped connection and reconnect path; the E2E Stop case confirms a stopped tab cannot reconnect to a later session. |
-| AC25 | **PENDING final clean-checkout `make check`.** The offline license generator, generated distribution, README, project MIT license, third-party notices, and push/PR workflow are in place. No GitHub-hosted Actions run was performed for this local branch, and CI does not publish artifacts. |
+| AC25 | **PASS locally.** The offline license generator, generated distribution, README, project MIT license, third-party notices, and push/PR workflow passed the final clean-checkout validation below. No GitHub-hosted Actions run was performed for this local branch, and CI does not publish artifacts. |
 
 ## Commands and suite evidence
 
@@ -63,9 +63,50 @@ case passed with the unmodified checker. Temporary distribution mutations were
 confined to test directories; the checked-in `dist/` was not used as a
 mutation fixture.
 
-A full fresh-checkout `make check` result, including current aggregate test
-counts and the tested Task 8 commit, will be added to the final verification
-note after that run.
+### Final clean-checkout `make check`
+
+Commit `3a484fe5d3bfb56bfd6b26d06309c490093fc179` was checked in a new
+detached checkout with the pinned Plenary revision as a sibling and a fresh
+`npm ci --offline` installation from the checked-in lockfile. The environment
+was Neovim 0.11.6, Python 3.14.4, Node 22.19.0/npm 10.9.3, Stylua 2.6.0,
+Selene 0.32.0, Playwright 1.64.1, Chromium 156.0.8078.4, Firefox 157.0, and
+Plenary commit `74b06c6c75e4eeb3108ec01852001636d85a932b`. `make check`
+ran from `/tmp/jsoncrack-task8-cleancheck/jsoncrack-nvim` with exit code 0:
+
+```sh
+cd /tmp/jsoncrack-task8-cleancheck/jsoncrack-nvim
+PATH=/tmp/jsoncrack-tools/bin:/home/zy/.nvm/versions/node/v22.19.0/bin:$PATH \
+  NVIM_LOG_FILE=/tmp/jsoncrack-task8-finalcheck.nvim.log make check
+```
+
+The Plenary checkout was at `../plenary.nvim`; web dependencies were installed
+in `web/` with `npm ci --offline` before running this command. Results:
+
+| Check | Result |
+| --- | --- |
+| Stylua / Selene | pass; 0 errors, 0 warnings, 0 parse errors |
+| TypeScript typecheck / Python compileall | pass |
+| Python unit tests | 52 passed |
+| Lua / Plenary | 25 passed (target 4, session 11, commands 3, process 7) |
+| Vitest | 63 passed in 5 files |
+| License generator unit tests | 2 passed |
+| Renderer Playwright | 24 passed (12 each in Chromium and Firefox) |
+| Process integration | 8 passed |
+| Preview E2E | 14 passed (7 each in Chromium and Firefox) |
+| Build and distribution inventory | pass; 5 manifested assets, 200 runtime package instances, 110 license texts |
+
+The test suites contain 188 passing cases in total, excluding the separate
+20-sample-per-browser performance run. The final generated `dist/` remained
+byte-for-byte equal to the committed inventory and contained 119 files
+totaling 4,198,586 bytes. The clean checkout had no tracked or untracked
+changes after the check.
+
+An initial attempt reused `node_modules` through a symlink to another checkout;
+Vite resolved Reaflow to that checkout and the renderer adapter correctly
+refused to build. That run was discarded as an invalid fresh-checkout setup.
+After replacing the symlink with `npm ci --offline` in the new checkout, the
+complete `make check` passed. No product code change was made for that setup
+diagnostic.
 
 ## Runtime closure and attribution
 
@@ -125,10 +166,21 @@ validation evidence, while the outcomes and exact versions are recorded here.
 
 For the README smoke, an isolated LazyVim 16.0.1 config loaded the example
 with only `dir` changed to the candidate checkout path as the README instructs.
-The mapping, all three commands, and `:help jsoncrack` resolved. A focused
-TTY run is checking actual key/Open/Stop behavior with the Python-only Neovim
-PATH; its result is pending clean exit confirmation and will be added as a
-docs-only follow-up when received.
+The mapping, all three commands, and `:help jsoncrack` resolved. A real TTY run
+then fed the configured `<Space>jp` key while a saved JSON file was the current
+buffer. This focused no-Node smoke ran at Task 8 commit
+`3a484fe5d3bfb56bfd6b26d06309c490093fc179`. Neovim 0.11.6 used the actual,
+unmocked `vim.ui.open` path and isolated OS handler to
+launch Chromium 156.0.8078.4; the page showed the saved buffer name, graph
+marker, connected status, and opacity 1. The real `JsonCrackPreviewOpen`
+command then dispatched the same preview URL to the default handler again.
+`JsonCrackPreviewStop` closed the port, Neovim exited with code 0, and cleanup
+found no preview listener or owned process. The runtime PATH contained Python
+3.10.18 and isolated `xdg-open`/`kde-open` handlers but no executable for
+`node`, `nodejs`, `npm`, or `npx`; both the external command lookup and
+Neovim's executable lookup confirmed their absence. LazyVim was 16.0.1 at
+commit `999700997f72227187d49d8b92667183dc7fc809`. The helper checked process
+exit and cleanup before shutting down its browser observer.
 
 ### Offline runtime check
 
@@ -216,6 +268,10 @@ The production Vite build reports that some minified chunks exceed 500 kB.
 This is the known ELK/graph-layout bundle; its payload was not changed just to
 silence the warning. It is also why the check records byte size and bundle
 warning instead of claiming a small download.
+
+Vitest prints the expected `Simulated renderer failure` console error while
+testing recovery from a renderer exception; the test passes and verifies the
+error boundary resets for the next input.
 
 ## CI and release boundary
 
