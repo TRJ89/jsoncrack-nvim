@@ -108,6 +108,31 @@ After replacing the symlink with `npm ci --offline` in the new checkout, the
 complete `make check` passed. No product code change was made for that setup
 diagnostic.
 
+## Final review follow-up
+
+Commit `2628e27dfd9aa39f1c0887fc47c43b5a05edd9bb` clarifies that
+`:JsonCrackPreviewOpen` asks the user to stop a preview on another target, and
+formats the upstream README fragment `MIT ©` as quoted evidence in the generated
+notices. The project license and all 110 copied `dist/licenses/` text files
+remain byte-for-byte unchanged. The generated `dist/` currently contains 119
+regular files totaling 4,198,588 bytes; the 4,198,586-byte inventory above
+continues to describe the earlier clean-checkout check at commit
+`3a484fe5d3bfb56bfd6b26d06309c490093fc179`.
+
+Focused checks for this documentation and notice-format change passed:
+`node --test web/scripts/licenses.test.mjs` passed 2/2, and
+`python3 -m unittest discover -s tests/python -p 'test_distribution.py' -v`
+passed 9/9. `make build` followed by `python3 scripts/check_dist.py` reported
+5 manifested assets, 200 runtime package instances, and 110 license texts.
+After commit `2628e27`, `make verify-dist` rebuilt the distribution and passed
+`python3 scripts/check_dist.py --check-tracked` with the same inventory. The
+build completed with Vite's advisory that some chunks exceed 500 kB after
+minification.
+
+No runtime code changed in this follow-up, so the 188-case runtime suite,
+native-browser checks, and performance measurements were not rerun; their
+results above remain tied to the commits and environments already recorded.
+
 ## Runtime closure and attribution
 
 The build and plugin runtime are offline. The generator walks the required and
