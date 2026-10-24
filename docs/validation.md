@@ -310,3 +310,32 @@ no publishing job. The workflow file was reviewed locally but no remote
 GitHub Actions run has been made for this checkout. There is no configured
 public repository URL or package coordinate, so public installation and
 release remain unpublished.
+
+## Main integration and publication review — 2026-10-24
+
+The MVP branch was fast-forward merged into `main` at `e954f5f`. In the
+main checkout, `make test` completed with exit code 0: Python 52, Lua 25,
+Vitest 63, license generator 2, renderer 24, lifecycle integration 8, and
+preview E2E 14 (188 total). TypeScript typecheck and `make verify-dist`
+also passed; the generated distribution matched the committed files.
+
+An earlier test attempt overlapped a normal distribution rebuild and failed
+one lifecycle case while waiting for a Python child. The build empties
+`dist/` before regenerating it, so that overlapping run was not treated as
+valid merged-checkout evidence. The complete test suite passed when rerun
+after the build had finished. No runtime code changed for this rerun.
+
+The npm advisory query (`npm --prefix web audit --json`) returned zero
+known vulnerabilities on this date. Installation still reported deprecated
+packages, including `inflight`, `whatwg-encoding`, `coverup`, `glob`, and
+`react-use-gesture`; those are maintenance considerations, not a claim of
+complete dependency security. A limited scan of tracked files found no
+private-key headers, common GitHub token patterns, AWS access-key IDs,
+tracked environment files, or tracked dependency/scratch directories.
+This scan is not an exhaustive security audit.
+
+A public remote has not been configured. Before a public release, select
+the repository URL, add the corresponding remote-install example to the
+README, and confirm the hosted GitHub Actions results. The hosted CI matrix
+remains unexecuted here. No push, public repository creation, or release
+publication was performed during this review.
