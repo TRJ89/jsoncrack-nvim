@@ -357,3 +357,10 @@ READMEのlazy.nvim/LazyVim例はコマンドによる遅延読込と、`<leader>
 - [Python http.server](https://docs.python.org/3/library/http.server.html)
 - [yaml 2公式資料](https://eemeli.org/yaml/)
 - [Neovim Autocommands](https://neovim.io/doc/user/autocmd.html)
+
+## 13. 2026-10-24 amendment — current key example
+
+本書の第3節にある `<leader>jp` は、2026-10-22に承認された初期設計の
+履歴として残す。現在のREADMEとvimdocのLazyVim設定例では
+`<leader>cj` を `:JsonCrackPreviewToggle` に割り当てる。利用者は自身の設定で
+別のキーを選べる。プラグイン本体はデフォルトのキーマップを登録しない。

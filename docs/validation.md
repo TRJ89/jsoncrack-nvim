@@ -301,7 +301,7 @@ error boundary resets for the next input.
 ## CI and release boundary
 
 `.github/workflows/ci.yml` checks the full suite on Linux with Neovim 0.11.6,
-Python 3.10, Node 22.19.0, npm 10.9.3, Stylua 2.6.0, Selene 0.32.0,
+Python 3.10, Node 22.23.4, npm 10.9.9, Stylua 2.6.0, Selene 0.32.0,
 pinned Plenary, and Playwright Chromium/Firefox. A compatibility matrix runs
 Neovim stable and nightly with Python 3.10 and the current Python 3.x line;
 nightly is advisory. The plugin and Plenary check out as sibling directories
@@ -339,3 +339,71 @@ the repository URL, add the corresponding remote-install example to the
 README, and confirm the hosted GitHub Actions results. The hosted CI matrix
 remains unexecuted here. No push, public repository creation, or release
 publication was performed during this review.
+
+## Release preparation toolchain and documentation — 2026-10-24
+
+The development pins are Node.js 22.23.4 and npm 10.9.9 in `.node-version`,
+`web/package.json`, the lockfile root engines, and the full-check CI job. Node
+and npm are development tools; the plugin runtime still uses no Node.js or
+npm. The historical 2026-10-23 clean-checkout and performance records above
+retain their original Node 22.19.0/npm 10.9.3 values and `<Space>jp` evidence.
+
+From `web/`, `node --version` printed `v22.23.4`, `npm --version` printed
+`10.9.9`, and `npm ci` exited 0, adding 316 packages. It reported the existing
+deprecations for `inflight`, `coverup`, `whatwg-encoding`, `glob`, and
+`react-use-gesture`. The lockfile diff changes only the root `engines` values;
+dependency versions, resolved URLs, integrity hashes, and license text were
+not changed.
+
+The first sandboxed `make check` exited 2 because test server subprocesses
+could not bind their local `127.0.0.1` sockets. The Python tests consequently
+reported 17 failures and 2 errors with `START_FAILED`; a direct diagnostic
+traced that response to `create_server` raising `loopback HTTP server could
+not start`. The same command was then rerun with local loopback access enabled
+and exited 0. No product code changed for the sandbox restriction.
+
+The passing run used Node.js 22.23.4/npm 10.9.9, Neovim 0.11.6, Python 3.14.4,
+Stylua 2.6.0, Selene 0.32.0, Playwright 1.64.1, Chromium, Firefox, and the
+sibling Plenary checkout. Stylua and Selene reported 0 errors, 0 warnings,
+and 0 parse errors; TypeScript typecheck and Python compileall passed. The
+suite results were:
+
+| Check | Result |
+| --- | --- |
+| Python unit tests | 52 passed |
+| Lua / Plenary | 25 passed |
+| Vitest | 63 passed in 5 files |
+| License generator tests | 2 passed |
+| Renderer Playwright | 24 passed, 12 per browser |
+| Process integration | 8 passed |
+| Preview E2E | 14 passed, 7 per browser |
+| Total | 188 passed |
+| Distribution validation | 5 manifested assets, 200 runtime package instances, 110 license texts; `make verify-dist` passed |
+
+The rebuild left `dist/` unchanged and its tracked inventory matched. The
+expected Vite warning about chunks larger than 500 kB appeared during renderer
+tests and the final build. Vitest also printed its expected simulated renderer
+failure while testing error-boundary recovery; the test passed. The npm
+installation emitted the deprecation notices listed above.
+
+The previous CI Selene step used `cargo install --locked --version 0.32.0`,
+which could not find that exact version in the configured crate registry
+(local search returned 0.31.0). CI now downloads the official Selene 0.32.0
+Linux release archive and checks SHA-256
+`d3773393578580074386e69337d35b7acddfbaa9fc38964c07fa3e28436ade9b` before
+extracting it. The archive does not retain its executable bit, so the step
+applies `chmod +x` before checking the binary. I executed the changed shell
+step with disposable `RUNNER_TEMP` and `GITHUB_PATH` values using the cached
+release archive as a local file URL: checksum verification passed and the
+installed binary reported `selene 0.32.0`. The hosted GitHub Actions download
+and full CI run remain unverified.
+
+For the current README mapping smoke, an isolated headless Neovim 0.11.6
+configuration loaded the README plugin spec through cached lazy.nvim commit
+`85c7ff3`, with only `dir` changed to this checkout. Feeding `<Space>cj` (the
+configured `<leader>cj`) invoked `JsonCrackPreviewToggle` and the stubbed
+`vim.ui.open` captured the preview URL. `:help jsoncrack` resolved to
+`doc/jsoncrack.txt`. This smoke verified mapping dispatch and help lookup; it
+did not display a browser window. The host lacks a vimdoc Treesitter parser,
+so the help check skipped filetype autocommands. Earlier visible-browser
+evidence in this document used the prior historical `<Space>jp` mapping.

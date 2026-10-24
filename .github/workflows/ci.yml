@@ -32,12 +32,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.19.0"
+          node-version: "22.23.4"
           cache: npm
           cache-dependency-path: jsoncrack-nvim/web/package-lock.json
 
       - name: Pin npm
-        run: npm install --global npm@10.9.3
+        run: npm install --global npm@10.9.9
 
       - name: Set up Neovim 0.11.6
         uses: rhysd/action-setup-vim@v1
@@ -52,18 +52,25 @@ jobs:
           version: 2.6.0
           args: --version
 
-      - name: Set up Rust for Selene
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Install Selene 0.32.0
+        env:
+          SELENE_URL: https://github.com/Kampfkarren/selene/releases/download/0.32.0/selene-0.32.0-linux.zip
+          SELENE_SHA256: d3773393578580074386e69337d35b7acddfbaa9fc38964c07fa3e28436ade9b
         run: |
-          cargo install --locked --version 0.32.0 selene
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          archive="$RUNNER_TEMP/selene-0.32.0-linux.zip"
+          install_dir="$RUNNER_TEMP/selene-0.32.0"
+          mkdir -p "$install_dir"
+          curl --fail --location --silent --show-error "$SELENE_URL" --output "$archive"
+          echo "$SELENE_SHA256  $archive" | sha256sum --check --strict
+          unzip -oq "$archive" -d "$install_dir"
+          chmod +x "$install_dir/selene"
+          test -x "$install_dir/selene"
+          echo "$install_dir" >> "$GITHUB_PATH"
 
       - name: Verify pinned toolchain
         run: |
-          test "$(node --version)" = "v22.19.0"
-          test "$(npm --version)" = "10.9.3"
+          test "$(node --version)" = "v22.23.4"
+          test "$(npm --version)" = "10.9.9"
           test "$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')" = "3.10"
           test "$(nvim --version | head -n 1)" = "NVIM v0.11.6"
           test "$(stylua --version)" = "stylua 2.6.0"

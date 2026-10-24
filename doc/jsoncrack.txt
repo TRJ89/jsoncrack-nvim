@@ -59,9 +59,9 @@ does not send preview data to an external service.
     Stop the current preview server. Any open tab remains open and reports
     that it cannot reconnect.
 
-A LazyVim configuration may map <leader>jp to
+A LazyVim configuration may map <leader>cj to
 :JsonCrackPreviewToggle. The plugin does not set or override that mapping by
-itself.
+itself. Choose another key in your configuration if you prefer.
 
 ==============================================================================
 4. BUFFER AND BROWSER BEHAVIOR                          *jsoncrack-behavior*
@@ -74,7 +74,7 @@ unnamed file must be saved before it can be previewed.
 The server stops when the target is no longer displayed by any Neovim window,
 when the target is unloaded, wiped, or renamed, when Stop or Toggle is used,
 or when Neovim exits. Closing a browser tab does not stop the server. Use
-:JsonCrackPreviewOpen to show it again, or use <leader>jp twice: the first
+:JsonCrackPreviewOpen to show it again, or use your mapped key twice: the first
 press stops the old session and the second starts a new one.
 
 The page shows the file name, format, connection/parse status, and last
@@ -125,10 +125,11 @@ tabs.
 ==============================================================================
 7. DEVELOPMENT                                          *jsoncrack-development*
 
-Node.js 22.19.0 and npm 10.9.3 are used to build and test the web UI. The Lua
-tests use plenary.nvim checked out as a sibling at ../plenary.nvim. Development
-tools include stylua 2.6.0, selene 0.32.0, and Playwright 1.64.1 with Chromium
-and Firefox installed.
+Node.js 22.23.4 and npm 10.9.9 are development tools used to build and test the
+web UI; they are not required by the plugin runtime. The Lua tests use
+plenary.nvim checked out as a sibling at ../plenary.nvim. Development tools
+include stylua 2.6.0, selene 0.32.0, and Playwright 1.64.1 with Chromium and
+Firefox installed.
 
 Run make lint, make test, make build, make verify-dist, or make check from
 the repository root. The complete test and check targets require the web

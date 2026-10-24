@@ -1,6 +1,12 @@
 # JsonCrack Preview for Neovim
 
-JsonCrack Preview opens the saved contents of one JSON or YAML buffer in the official JSON Crack graph view in your operating system's default browser. Saving the target file updates the page automatically. The plugin and its browser assets run locally.
+An unofficial Neovim integration for JSON Crack. This project is not affiliated
+with or endorsed by the JSON Crack project.
+
+JsonCrack Preview opens the saved contents of one JSON or YAML buffer in the
+official JSON Crack graph view in your operating system's default browser.
+Saving the target file updates the page automatically. The plugin and its
+browser assets run locally.
 
 This MVP supports Linux desktop sessions with LazyVim. It uses the bundled
 `dist/` files, a small Python 3 server, and `vim.ui.open`; using the plugin does
@@ -34,7 +40,7 @@ return {
     },
     keys = {
       {
-        "<leader>jp",
+        "<leader>cj",
         "<cmd>JsonCrackPreviewToggle<cr>",
         desc = "Toggle JSON Crack preview",
       },
@@ -49,8 +55,9 @@ different checkout location.
 
 ## Use
 
-Open a saved JSON or YAML file and press `<leader>jp`, or run one of the three
-commands:
+The example maps `<leader>cj` to toggle the preview; choose another key if it
+fits your setup better. Open a saved JSON or YAML file and press your mapped
+key, or run one of the three commands:
 
 - `:JsonCrackPreviewToggle` starts a preview for the current buffer. If a
   preview is already running, it stops that session regardless of the current
@@ -71,7 +78,7 @@ The preview server stops when the target buffer is no longer displayed in any
 Neovim window, when the target is unloaded, wiped, or renamed, when you run
 Stop or Toggle, or when Neovim exits. Closing the browser tab alone does not
 stop it. To show the page after closing its tab, use
-`:JsonCrackPreviewOpen`, or press `<leader>jp` twice: the first press stops the
+`:JsonCrackPreviewOpen`, or press your mapped key twice: the first press stops the
 old session and the second starts a new one.
 
 ## Input support and limits
@@ -125,8 +132,9 @@ background tabs, or physical displays.
 
 ## Development and validation
 
-The pinned web build toolchain is Node.js 22.19.0 and npm 10.9.3. Install the
-lockfile dependencies and browser engines from the repository root:
+The pinned development toolchain is Node.js 22.23.4 and npm 10.9.9. Node.js
+and npm build and test the web UI; the plugin runtime does not use them. Install
+the lockfile dependencies and browser engines from the repository root:
 
 ```sh
 npm --prefix web ci
@@ -160,6 +168,14 @@ No public repository URL or package coordinates have been selected for this
 checkout. Confirm the publishing repository and review the generated
 distribution notices before advertising a remote `lazy.nvim` installation or
 creating a release. CI validates changes but does not publish artifacts.
+
+## Support
+
+For help or a request to support another environment, please open an issue and
+include your operating system, Neovim version and setup, and the use case. I may
+consider requests for other environments, but support is not guaranteed. The
+supported preview environment and exclusions above remain the project's
+documented boundary.
 
 ## License
 
