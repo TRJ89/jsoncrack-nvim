@@ -454,3 +454,31 @@ second encountered the first run's port 4173 listener. I inspected the
 process tree and waited for both the prior processes and listener to exit
 before running the single final check recorded above. Those orchestration
 attempts are not treated as test results.
+
+## Bilingual documentation verification — 2026-11-01
+
+The English and Japanese READMEs now use matching `lazy.nvim` specs with the
+planned `TRJ89/jsoncrack-nvim` identifier, three commands, and the optional
+`<leader>cj` mapping. The remote spec is explicitly marked unavailable until
+publication; local-checkout loading and contributor commands are in
+`docs/development.md`. The full parser contract and measured performance
+summary are in `docs/input-support.md`, with links from both READMEs.
+
+Focused checks passed: an offline link scan resolved all 21 local Markdown
+links in the user docs; Neovim 0.11.6 parsed all three Lua examples, and the
+English/Japanese remote specs matched apart from the localized key description.
+The existing Mason Pyright executable at
+`/home/zy/.local/share/nvim/mason/bin/pyright --project pyrightconfig.json`
+also exited 0 with 0 errors, warnings, or informations.
+
+An isolated configuration loaded the English README spec through cached
+lazy.nvim commit `85c7ff3`, replacing only the planned repository identifier
+with the checkout's local `dir`. Feeding `<Space>cj` loaded the plugin, started
+the real local preview server, and captured its loopback URL through a stubbed
+`vim.ui.open`; the actual Stop command stopped it. A copied help file received
+tags in the temporary runtime and `:help jsoncrack` resolved with autocommands
+disabled. This headless smoke did not open a browser window or verify browser
+rendering. The initial smoke harness disabled lazy.nvim startup and then used
+queued input instead of immediate key execution; the corrected harness used
+`nvim_feedkeys(..., "xt", false)` and passed. No product change or full-suite
+rerun was needed for these documentation edits.

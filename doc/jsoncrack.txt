@@ -25,8 +25,9 @@ Supported use is a Linux desktop with Neovim 0.11 or newer, Python 3.10 or
 newer available as python3, and LazyVim/lazy.nvim. Node.js, npm, pip, an
 install-time build, and a network connection are not required at runtime.
 
-No setup() call is needed. Install the source checkout with lazy.nvim's local
-dir option. A working example is in the repository README.
+No setup() call is needed. The README shows the planned lazy.nvim spec for
+TRJ89/jsoncrack-nvim; that repository has not been published yet. To load a
+local checkout, use the lazy.nvim dir example in docs/development.md.
 
 ==============================================================================
 2. REQUIREMENTS                                           *jsoncrack-requirements*
@@ -125,15 +126,10 @@ tabs.
 ==============================================================================
 7. DEVELOPMENT                                          *jsoncrack-development*
 
-Node.js 22.23.4 and npm 10.9.9 are development tools used to build and test the
-web UI; they are not required by the plugin runtime. The Lua tests use
-plenary.nvim checked out as a sibling at ../plenary.nvim. Development tools
-include stylua 2.6.0, selene 0.32.0, and Playwright 1.64.1 with Chromium and
-Firefox installed.
-
-Run make lint, make test, make build, make verify-dist, or make check from
-the repository root. The complete test and check targets require the web
-runtime and Playwright browsers; the preview itself does not.
+Contributor setup, the local-checkout example, pinned tool versions, and the
+validation commands are documented in docs/development.md. Node.js 22.23.4
+and npm 10.9.9 are used to build and test the web UI; they are not required by
+the plugin runtime. Python type checking uses the lockfile-pinned Pyright.
 
 The project license is in LICENSE. Generated dependency notices and exact
 license texts are in dist/THIRD-PARTY-NOTICES.md, dist/THIRD-PARTY-NOTICES.json,

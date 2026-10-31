@@ -1,38 +1,45 @@
 # JsonCrack Preview for Neovim
 
-An unofficial Neovim integration for JSON Crack. This project is not affiliated
-with or endorsed by the JSON Crack project.
+[日本語](README.ja.md)
 
-JsonCrack Preview opens the saved contents of one JSON or YAML buffer in the
-official JSON Crack graph view in your operating system's default browser.
-Saving the target file updates the page automatically. The plugin and its
+Preview a saved JSON or YAML file as a graph in the official JSON Crack view in
+your default browser. Save the file to refresh the graph. The preview server and
 browser assets run locally.
 
-This MVP supports Linux desktop sessions with LazyVim. It uses the bundled
-`dist/` files, a small Python 3 server, and `vim.ui.open`; using the plugin does
-not require Node.js, npm, pip, a network connection, or an install-time build.
+This is an unofficial Neovim integration and is not affiliated with or endorsed
+by JSON Crack.
+
+## Features
+
+- Preview saved `.json`, `.yaml`, and `.yml` files.
+- Refresh the graph automatically when the file is saved.
+- Run the preview locally with the bundled browser assets and a small Python
+  server.
 
 ## Requirements
 
 - Neovim 0.11 or newer.
 - Python 3.10 or newer available as `python3`.
-- A Linux desktop with a configured default browser and a working `vim.ui.open` implementation.
-- LazyVim with `lazy.nvim`, or another setup that loads this plugin's `plugin/jsoncrack.lua`.
+- A Linux desktop session with a default browser and working `vim.ui.open`.
+- LazyVim with `lazy.nvim`, or another configuration that loads this plugin's
+  `plugin/jsoncrack.lua`.
 
-The supported preview target is a saved, readable regular file named with `.json`, `.yaml`, or `.yml`. JSONC and other file types are not supported. Headless Neovim, SSH sessions, multiple simultaneous previews in one Neovim process, following a renamed buffer, and automatic preview closure when a browser tab closes are outside the MVP scope.
+Node.js, npm, pip, a network connection, and an install-time build are not
+needed to run the plugin.
 
-## Install from a local checkout
+## Installation
 
-Add the following file to your LazyVim config, for example
-`~/.config/nvim/lua/plugins/jsoncrack.lua`. The example assumes this checkout
-is at `~/projects/jsoncrack-nvim`; if yours is elsewhere, replace that
-directory with your checkout location:
+The planned repository is `TRJ89/jsoncrack-nvim`, but it has not been published
+yet. The spec below documents the intended `lazy.nvim` installation and will be
+usable after publication. For a local checkout in the meantime, see
+[Development](docs/development.md).
+
+With LazyVim, save this as `~/.config/nvim/lua/plugins/jsoncrack.lua`:
 
 ```lua
 return {
   {
-    dir = vim.fn.expand("~/projects/jsoncrack-nvim"),
-    name = "jsoncrack.nvim",
+    "TRJ89/jsoncrack-nvim",
     cmd = {
       "JsonCrackPreviewToggle",
       "JsonCrackPreviewOpen",
@@ -49,134 +56,71 @@ return {
 }
 ```
 
-There is no `setup()` call, `build` hook, or install-time download. The source
-checkout already contains the browser assets. Change only `dir` when using a
-different checkout location.
+The `<leader>cj` mapping is optional; change or remove it to fit your setup.
+There is no `setup()` call or build hook.
 
-## Use
+## Usage
 
-The example maps `<leader>cj` to toggle the preview; choose another key if it
-fits your setup better. Open a saved JSON or YAML file and press your mapped
-key, or run one of the three commands:
+Open a saved JSON or YAML file, then use your mapped key or one of these
+commands:
 
 - `:JsonCrackPreviewToggle` starts a preview for the current buffer. If a
-  preview is already running, it stops that session regardless of the current
-  buffer.
-- `:JsonCrackPreviewOpen` starts a preview when none is running. For the same
-  target, it asks the default browser to open the existing preview URL again;
-  if another target is active, it asks you to stop that preview first. The
-  operating system may open a new tab; existing-tab reuse is not promised.
-- `:JsonCrackPreviewStop` stops the server and leaves any browser tab open.
-  That tab will show that it can no longer reconnect.
+  preview is already running, it stops that session regardless of which buffer
+  is current.
+- `:JsonCrackPreviewOpen` starts a preview if none is running. For the active
+  target, it asks the default browser to open the current preview URL again. If
+  a different target is active, stop that preview first. The browser may open a
+  new tab; reuse of an existing tab is not guaranteed.
+- `:JsonCrackPreviewStop` stops the server. Any open browser tab stays open and
+  reports that it cannot reconnect.
 
-The preview reads the file from disk. If the buffer has unsaved edits, the
-plugin warns that those edits are excluded. Save with `:write`; the browser
-polls the saved file every 500 ms and updates without a manual reload. A new,
-unnamed, unreadable, or unsupported buffer cannot start a preview.
+The preview reads the saved file from disk. Unsaved edits are excluded; write
+them with `:write`. The browser checks for saved changes every 500 ms and
+updates without a manual reload. The server stops when the target buffer is no
+longer displayed, is unloaded, wiped, or renamed, or when Neovim exits. If you
+close the browser tab, use `:JsonCrackPreviewOpen` to show the page again;
+closing a tab alone does not stop the server.
 
-The preview server stops when the target buffer is no longer displayed in any
-Neovim window, when the target is unloaded, wiped, or renamed, when you run
-Stop or Toggle, or when Neovim exits. Closing the browser tab alone does not
-stop it. To show the page after closing its tab, use
-`:JsonCrackPreviewOpen`, or press your mapped key twice: the first press stops the
-old session and the second starts a new one.
+## Limits
 
-## Input support and limits
+Only saved, readable regular files with a `.json`, `.yaml`, or `.yml` extension
+are supported; JSONC and other file types are not. The parser has explicit
+input, nesting, and graph-size limits, and rejects unsupported syntax instead
+of drawing a partial result. See [Input support](docs/input-support.md) for the
+complete contract and [the validation record](docs/validation.md#performance-method-and-results)
+for measured performance and its conditions.
 
-The parser validates input before passing it to JSON Crack. It does not
-silently draw a partial result.
+This MVP supports Linux desktop sessions. Headless Neovim, SSH sessions,
+multiple simultaneous previews in one Neovim process, following a renamed
+buffer, and automatic shutdown when a browser tab closes are outside its scope.
 
-- Maximum input: 1 MiB (1,048,576 bytes), including a UTF-8 byte order mark.
-  UTF-8 is required; a leading UTF-8 BOM is removed.
-- Maximum nesting depth: 100, with the root container counted as depth 1.
-- Maximum graph size: 1,500 rendered nodes. Larger graphs display an explicit
-  limit error.
-- Supported JSON: standard JSON objects, arrays, strings, finite numbers,
-  booleans, and null. Comments, trailing commas, duplicate keys, multiple
-  roots, empty input, unsafe integers, and non-finite numbers are errors.
-  Decimal fractions use JavaScript number precision.
-- Supported YAML: one YAML 1.2 Core document with string mapping keys,
-  sequences, strings, finite numbers, booleans, and null. Comments, quoted and
-  multiline strings, and flow collections are supported. Multiple documents,
-  YAML 1.1 directives, custom or explicit tags, anchors, aliases, non-string
-  or duplicate keys, merge key `<<`, and non-finite numbers are errors. Under
-  YAML 1.2 Core, values such as `yes`, `no`, and date-like scalars are strings.
-  Empty or comment-only YAML is reported as an empty document; explicit `null`
-  and `~` are null values.
+## Troubleshooting and support
 
-The performance target is a foreground browser, a local file no larger than
-100 KiB, at most 300 rendered nodes, and a nearest-rank p95 of at most 1,000 ms
-across 20 saves. On the validation fixture (7,111 bytes, 67 rendered nodes),
-measured p95 was 526.674 ms in Playwright Chromium 156.0.8078.4 and 911.385 ms
-in Playwright Firefox 157.0, using a headed virtual X11 desktop. This is a
-measured result for that environment, not a guarantee for larger inputs,
-background tabs, or physical displays.
-
-## Troubleshooting
-
-- **The command says to save the file:** write a named `.json`, `.yaml`, or
-  `.yml` file first. The server reads the saved file, not Neovim's in-memory
-  text.
-- **The browser reports a parse or limit error:** check JSON syntax or the
-  supported YAML subset, then reduce input size, nesting, or node count as
-  needed. A later valid save recovers the preview.
-- **Python or distribution files are missing:** check `python3 --version`,
-  confirm the installed checkout contains `server/` and `dist/`, and make sure
-  `dir` points to the repository root. Runtime installation does not rebuild
+- **The command asks you to save the file:** write a named `.json`, `.yaml`, or
+  `.yml` file first. The preview uses the on-disk contents.
+- **The browser shows a parse or limit error:** check the file against the
+  [supported input rules](docs/input-support.md), then reduce its size, nesting,
+  or number of rendered nodes if needed. A later valid save updates the view.
+- **Python or browser assets are missing:** check `python3 --version` and make
+  sure the plugin points to a complete checkout containing `server/` and
   `dist/`.
 - **No browser opens:** use a Linux desktop with a configured default browser
   and check that `vim.ui.open` works in Neovim. Remote and headless sessions
   are not supported.
-- **An old tab says it cannot reconnect:** start a new preview from Neovim.
-  Stopped sessions do not transfer to a later session.
+- **An old tab cannot reconnect:** start or reopen a preview from Neovim.
 
-## Development and validation
+Once the repository is published, use its issue tracker to report a problem or
+request another environment. Include your operating system, Neovim version and
+setup, and the use case. I may consider support requests, but support for other
+environments is not guaranteed.
 
-The pinned development toolchain is Node.js 22.23.4 and npm 10.9.9. Node.js
-and npm build and test the web UI; the plugin runtime does not use them. Install
-the lockfile dependencies and browser engines from the repository root:
+## Development
 
-```sh
-npm --prefix web ci
-npx --prefix web playwright install --with-deps chromium firefox
-```
-
-The Neovim tests use `plenary.nvim` as a sibling checkout at
-`../plenary.nvim`. Install the pinned `stylua` 2.6.0 and `selene` 0.32.0 tools
-and Neovim 0.11.6 or newer for the full suite. The GitHub Actions workflow
-provisions those tools and checks Neovim 0.11.6, stable, and nightly; nightly
-is advisory.
-
-```sh
-make lint        # Lua lint, TypeScript typecheck, Python syntax check
-make test        # Python, Lua/plenary, web, renderer, integration, and browser E2E suites
-make build       # regenerate dist/ from web/package-lock.json
-make verify-dist # rebuild and reject changed, missing, new, or invalid distribution files
-make check       # lint, test, and verify-dist
-```
-
-`make test` and `make check` need Node/npm and the Playwright browsers. The
-plugin runtime does not. `make build` does not access the network; it uses the
-installed lockfile dependencies. `dist/THIRD-PARTY-NOTICES.md`,
-`dist/THIRD-PARTY-NOTICES.json`, and `dist/licenses/` contain the generated
-runtime dependency attribution and license texts. `LICENSE` covers this
-project's own code; third-party terms remain separate.
-
-## Release status
-
-No public repository URL or package coordinates have been selected for this
-checkout. Confirm the publishing repository and review the generated
-distribution notices before advertising a remote `lazy.nvim` installation or
-creating a release. CI validates changes but does not publish artifacts.
-
-## Support
-
-For help or a request to support another environment, please open an issue and
-include your operating system, Neovim version and setup, and the use case. I may
-consider requests for other environments, but support is not guaranteed. The
-supported preview environment and exclusions above remain the project's
-documented boundary.
+Contributor setup, local-checkout loading, validation commands, and the
+pre-publication checklist are in [docs/development.md](docs/development.md).
 
 ## License
 
-This project's code is distributed under the MIT License in [`LICENSE`](LICENSE). The web distribution also contains the applicable dependency license and notice texts; see [`dist/THIRD-PARTY-NOTICES.md`](dist/THIRD-PARTY-NOTICES.md).
+The project's code is distributed under the MIT License; see [LICENSE](LICENSE).
+The bundled web distribution also includes dependency notices and license
+texts in `dist/THIRD-PARTY-NOTICES.md` and `dist/licenses/`.
