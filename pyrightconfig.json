@@ -1,0 +1,7 @@
+{
+  "include": ["server", "scripts", "tests"],
+  "extraPaths": ["tests/python"],
+  "pythonPlatform": "Linux",
+  "pythonVersion": "3.10",
+  "typeCheckingMode": "standard"
+}

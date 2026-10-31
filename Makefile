@@ -14,6 +14,7 @@ lint-web:
 
 lint-python:
 	python3 -m compileall -q server scripts tests
+	env -u NO_COLOR -u FORCE_COLOR npm --prefix web run typecheck:python
 
 test-lua:
 	@if [ -n "$(TEST_FILE)" ]; then \

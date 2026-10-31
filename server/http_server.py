@@ -214,7 +214,11 @@ class _BoundedHTTPServer(ThreadingHTTPServer):
     block_on_close = True
     request_queue_size = 16
 
-    def __init__(self, server_address, handler):
+    def __init__(
+        self,
+        server_address: tuple[str, int],
+        handler: type[BaseHTTPRequestHandler],
+    ) -> None:
         self._request_slots = threading.BoundedSemaphore(MAX_CONCURRENT_REQUESTS)
         super().__init__(server_address, handler)
 
@@ -270,7 +274,7 @@ def create_server(
         def version_string(self) -> str:
             return "JsonCrackPreview"
 
-        def log_message(self, format_string, *args):
+        def log_message(self, format: str, *args: object) -> None:
             return
 
         def send_error(self, code, message=None, explain=None):
@@ -346,7 +350,10 @@ def create_server(
                     pass
 
         def _validate_host_and_origin(self) -> bool:
-            expected_host = f"127.0.0.1:{self.server.server_address[1]}"
+            if not isinstance(self.server, HTTPServer):
+                self._reply(403, b"Forbidden\n")
+                return False
+            expected_host = f"127.0.0.1:{self.server.server_port}"
             hosts = self.headers.get_all("Host", [])
             if len(hosts) != 1 or hosts[0] != expected_host:
                 self._reply(403, b"Forbidden\n")

@@ -5,7 +5,13 @@ import time
 import unittest
 from pathlib import Path
 
-from support import launch_server, make_dist, start_server
+from support import (
+    decode_ready_message,
+    launch_server,
+    make_dist,
+    parse_json_object,
+    start_server,
+)
 
 
 class ServerProcessTests(unittest.TestCase):
@@ -40,14 +46,15 @@ class ServerProcessTests(unittest.TestCase):
         child.stdin.write(config[split:])
         child.stdin.flush()
         ready_line = child.read_stdout_line()
-        child.ready = json.loads(ready_line.decode("utf-8"))
+        raw_ready = parse_json_object(ready_line)
+        ready = decode_ready_message(ready_line)
 
-        self.assertEqual(child.ready["event"], "ready")
-        self.assertEqual(child.ready["protocol"], 1)
-        self.assertEqual(set(child.ready), {"event", "protocol", "port", "token"})
-        self.assertGreaterEqual(child.ready["port"], 1)
-        self.assertLessEqual(child.ready["port"], 65535)
-        self.assertRegex(child.ready["token"], r"^[0-9a-f]{64}$")
+        self.assertEqual(ready["event"], "ready")
+        self.assertEqual(ready["protocol"], 1)
+        self.assertEqual(set(raw_ready), {"event", "protocol", "port", "token"})
+        self.assertGreaterEqual(ready["port"], 1)
+        self.assertLessEqual(ready["port"], 65535)
+        self.assertRegex(ready["token"], r"^[0-9a-f]{64}$")
         self.assertIsNone(child.process.poll())
         self.assertEqual(child.read_stdout_available(), b"")
 

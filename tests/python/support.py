@@ -14,11 +14,51 @@ import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Literal, TypedDict
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT = object()
+
+
+class ReadyMessage(TypedDict):
+    event: Literal["ready"]
+    protocol: int
+    port: int
+    token: str
+
+
+def parse_json_object(payload: bytes) -> dict[str, object]:
+    """Decode one JSON object without carrying json.loads' dynamic type onward."""
+    value: object = json.loads(payload.decode("utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("server message must be a JSON object")
+
+    result: dict[str, object] = {}
+    for key, item in value.items():
+        if not isinstance(key, str):
+            raise ValueError("server message keys must be strings")
+        result[key] = item
+    return result
+
+
+def _ready_message(message: dict[str, object]) -> ReadyMessage:
+    event = message.get("event")
+    protocol = message.get("protocol")
+    port = message.get("port")
+    token = message.get("token")
+    if (
+        event != "ready"
+        or type(protocol) is not int
+        or type(port) is not int
+        or not isinstance(token, str)
+    ):
+        raise ValueError("server ready message is invalid")
+    return {"event": "ready", "protocol": protocol, "port": port, "token": token}
+
+
+def decode_ready_message(payload: bytes) -> ReadyMessage:
+    return _ready_message(parse_json_object(payload))
 
 
 @dataclass(frozen=True)
@@ -133,18 +173,36 @@ class HTTPClient:
 
 
 class ServerProcess:
-    def __init__(self, temporary: tempfile.TemporaryDirectory, process: subprocess.Popen):
+    def __init__(
+        self,
+        temporary: tempfile.TemporaryDirectory[str],
+        process: subprocess.Popen[bytes],
+    ) -> None:
         self.temporary = temporary
         self.process = process
         self.pid = process.pid
         self.plugin_root = Path(temporary.name) / "plugin"
         self.dist_path = self.plugin_root / "dist"
+        if process.stdin is None or process.stdout is None or process.stderr is None:
+            raise RuntimeError("server child pipes are unavailable")
         self.stdin = process.stdin
         self.stdout = process.stdout
         self.stderr = process.stderr
         self._stdout_buffer = bytearray()
-        self.ready: dict | None = None
-        self.client: HTTPClient | None = None
+        self._ready: ReadyMessage | None = None
+        self._client: HTTPClient | None = None
+
+    @property
+    def ready(self) -> ReadyMessage:
+        if self._ready is None:
+            raise RuntimeError("server child has not reported ready")
+        return self._ready
+
+    @property
+    def client(self) -> HTTPClient:
+        if self._client is None:
+            raise RuntimeError("server child is not ready")
+        return self._client
 
     def send_configuration(self, target: Path, chunks: tuple[bytes, ...] | None = None) -> None:
         target = Path(target)
@@ -189,11 +247,12 @@ class ServerProcess:
         finally:
             selector.close()
 
-    def wait_ready(self, timeout: float = 4.0) -> dict:
-        self.ready = json.loads(self.read_stdout_line(timeout).decode("utf-8"))
-        if self.ready.get("event") == "ready":
-            self.client = HTTPClient(self.ready["port"], self.ready["token"])
-        return self.ready
+    def wait_ready(self, timeout: float = 4.0) -> dict[str, object]:
+        message = parse_json_object(self.read_stdout_line(timeout))
+        if message.get("event") == "ready":
+            self._ready = _ready_message(message)
+            self._client = HTTPClient(self._ready["port"], self._ready["token"])
+        return message
 
     def read_stdout_available(self) -> bytes:
         output = bytearray(self._stdout_buffer)
@@ -225,18 +284,17 @@ class ServerProcess:
         return bytes(output)
 
     def close(self) -> None:
-        if self.client is not None:
-            self.client.close()
-        if self.stdin is not None and not self.stdin.closed:
+        if self._client is not None:
+            self._client.close()
+        if not self.stdin.closed:
             self.stdin.close()
         try:
             self.process.wait(timeout=3.0)
         except subprocess.TimeoutExpired:
             self.process.kill()
             self.process.wait(timeout=2.0)
-        for stream in (self.stdout, self.stderr):
-            if stream is not None:
-                stream.close()
+        self.stdout.close()
+        self.stderr.close()
         self.temporary.cleanup()
 
 

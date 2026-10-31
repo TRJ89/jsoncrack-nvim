@@ -407,3 +407,50 @@ configured `<leader>cj`) invoked `JsonCrackPreviewToggle` and the stubbed
 did not display a browser window. The host lacks a vimdoc Treesitter parser,
 so the help check skipped filetype autocommands. Earlier visible-browser
 evidence in this document used the prior historical `<Space>jp` mapping.
+
+## Python type checking — 2026-10-31
+
+The pre-change Pyright 1.1.407 run over `server scripts tests` reported 65
+errors, 0 warnings, and 0 informations. The newly configured project check
+reported the same 65 diagnostics before the Python fixes. After the fixes,
+`npm --prefix web run typecheck:python` reports 0 errors, 0 warnings, and 0
+informations. `make lint-python` runs Python `compileall` and this pinned
+project check. A temporary owned test fixture with an intentional `str` to
+`int` mismatch made `make lint-python` fail with one Pyright assignment error;
+the fixture was removed, and the clean target passed.
+
+The final sequential `make check` exited 0 with Node.js 22.23.4/npm 10.9.9,
+Python 3.14.4 on Linux, Neovim 0.11.6, Stylua 2.6.0, Selene 0.32.0, and
+Playwright 1.64.1 with Chromium and Firefox. Pyright targets Python 3.10;
+the runtime floor remains Python 3.10, while the available local interpreter
+was 3.14.4. The suite reported:
+
+| Check | Result |
+| --- | --- |
+| Stylua / Selene | 0 errors, 0 warnings, 0 parse errors |
+| Web TypeScript / Python compileall / Pyright | Passed; Pyright 0/0/0 |
+| Python unit tests | 52 passed |
+| Lua / Plenary | 25 passed |
+| Vitest | 63 passed in 5 files |
+| License generator tests | 2 passed |
+| Renderer Playwright | 24 passed, 12 per browser |
+| Process integration | 8 passed |
+| Preview E2E | 14 passed, 7 per browser |
+| Distribution validation | 5 manifested assets, 200 runtime package instances, 110 license texts |
+| Total tests | 188 passed |
+
+The build emitted its existing Vite warning about chunks larger than 500 kB.
+Vitest printed the simulated renderer error used by its passing error-boundary
+tests. `npm ci` installed the exact lockfile and reported 4 moderate audit
+findings in the existing dependency tree, including the existing
+`minimatch@3.1.5` path through `glob`/`dotignore`/`tape`; no unrelated
+dependencies were changed. The earlier install command reported 7 moderate
+findings before the clean install's audit report. The full GitHub Actions run
+was not executed locally.
+
+Two earlier full-suite launcher attempts were excluded from these results:
+the first lost session tracking and overlapped a second invocation, and the
+second encountered the first run's port 4173 listener. I inspected the
+process tree and waited for both the prior processes and listener to exit
+before running the single final check recorded above. Those orchestration
+attempts are not treated as test results.
