@@ -482,3 +482,22 @@ rendering. The initial smoke harness disabled lazy.nvim startup and then used
 queued input instead of immediate key execution; the corrected harness used
 `nvim_feedkeys(..., "xt", false)` and passed. No product change or full-suite
 rerun was needed for these documentation edits.
+
+## npm advisory assessment — 2026-11-01
+
+A fresh `npm audit` reports seven moderate findings, all for
+[GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249), through
+`jsoncrack-react > reaflow > ellipsize@0.2.0 > tape > glob/dotignore >
+minimatch@3.1.5`. The advisory concerns attacker-controlled glob patterns when
+`optimizationLevel >= 2` is used by `firstPhasePreProcess` or
+`secondPhasePreProcess`. The installed `minimatch@3.1.5` does not contain those
+functions. `ellipsize`'s runtime entry point does not import `tape`, and this
+project's tests use Vitest and `node:test`, not `tape`.
+
+An in-memory Vite production build (`write: false`) enumerated 557 modules and
+included none from `minimatch`, `glob`, `dotignore`, or `tape`. Its six
+generated files were byte-identical to the current `dist/`. Based on these
+checks, exposure through the current build is low. Accept this targeted
+advisory for the current lockfile and bundle, and reassess after dependency
+updates. This is not a blanket audit exception or a claim that all
+dependencies are vulnerability-free.

@@ -29,12 +29,8 @@ needed to run the plugin.
 
 ## Installation
 
-The planned repository is `TRJ89/jsoncrack-nvim`, but it has not been published
-yet. The spec below documents the intended `lazy.nvim` installation and will be
-usable after publication. For a local checkout in the meantime, see
-[Development](docs/development.md).
-
-With LazyVim, save this as `~/.config/nvim/lua/plugins/jsoncrack.lua`:
+Install from [GitHub](https://github.com/TRJ89/jsoncrack-nvim). With LazyVim,
+save this as `~/.config/nvim/lua/plugins/jsoncrack.lua`:
 
 ```lua
 return {
@@ -55,6 +51,8 @@ return {
   },
 }
 ```
+
+For contributor checkouts, see [Development](docs/development.md).
 
 The `<leader>cj` mapping is optional; change or remove it to fit your setup.
 There is no `setup()` call or build hook.
@@ -109,15 +107,15 @@ buffer, and automatic shutdown when a browser tab closes are outside its scope.
   are not supported.
 - **An old tab cannot reconnect:** start or reopen a preview from Neovim.
 
-Once the repository is published, use its issue tracker to report a problem or
-request another environment. Include your operating system, Neovim version and
-setup, and the use case. I may consider support requests, but support for other
-environments is not guaranteed.
+Use the [issue tracker](https://github.com/TRJ89/jsoncrack-nvim/issues) to
+report a problem or request another environment. Include your operating system,
+Neovim version and setup, and the use case. I may consider support requests,
+but support for other environments is not guaranteed.
 
 ## Development
 
-Contributor setup, local-checkout loading, validation commands, and the
-pre-publication checklist are in [docs/development.md](docs/development.md).
+Contributor setup, local-checkout loading, validation commands, and release
+maintenance notes are in [docs/development.md](docs/development.md).
 
 ## License
 

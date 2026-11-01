@@ -8,8 +8,8 @@ the checked-in `dist/` assets.
 
 ## Load a local checkout
 
-Until `TRJ89/jsoncrack-nvim` is published, use `lazy.nvim`'s `dir` option with
-the path to your clone. For LazyVim, save this spec as
+For a contributor checkout, use `lazy.nvim`'s `dir` option with the path to
+your clone. For LazyVim, save this spec as
 `~/.config/nvim/lua/plugins/jsoncrack.lua` and change the path if needed:
 
 ```lua
@@ -74,21 +74,15 @@ The full test and check targets require Node/npm and the Playwright browsers.
 `make build` uses installed lockfile dependencies and does not fetch packages.
 The plugin itself does not need these development tools.
 
-## Before publication
+## Release maintenance
 
-The planned repository name is `TRJ89/jsoncrack-nvim`; no public repository or
-remote installation is available yet. Do not describe the planned `lazy.nvim`
-spec in the README as installable until that repository is published. Before a
-release, confirm the repository URL, review the generated notices in
-`dist/THIRD-PARTY-NOTICES.md`, `dist/THIRD-PARTY-NOTICES.json`, and
-`dist/licenses/`, and confirm hosted CI results. CI validates changes but does
-not publish artifacts.
+Before a release, run `make check`, confirm the hosted GitHub Actions results,
+and review the generated notices in `dist/THIRD-PARTY-NOTICES.md`,
+`dist/THIRD-PARTY-NOTICES.json`, and `dist/licenses/`. CI validates changes
+but does not publish artifacts.
 
-The 2026-10-31 validation record notes that `npm ci` reported four moderate
-audit findings in the existing dependency tree, including a `minimatch@3.1.5`
-dependency path. Keep these as a release follow-up; see
-[the validation record](validation.md#python-type-checking-2026-10-31). No
-dependency upgrade is part of this documentation change.
+The current assessment of the npm advisory finding is in the
+[2026-11-01 validation record](validation.md#npm-advisory-assessment-2026-11-01).
 
 The project's own code is covered by [LICENSE](../LICENSE). The web
 distribution's dependency terms and license texts are listed separately in

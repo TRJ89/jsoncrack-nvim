@@ -25,9 +25,10 @@ Supported use is a Linux desktop with Neovim 0.11 or newer, Python 3.10 or
 newer available as python3, and LazyVim/lazy.nvim. Node.js, npm, pip, an
 install-time build, and a network connection are not required at runtime.
 
-No setup() call is needed. The README shows the planned lazy.nvim spec for
-TRJ89/jsoncrack-nvim; that repository has not been published yet. To load a
-local checkout, use the lazy.nvim dir example in docs/development.md.
+No setup() call is needed. Install from
+https://github.com/TRJ89/jsoncrack-nvim using the lazy.nvim spec in the
+README. For contributor checkouts, use the lazy.nvim dir example in
+docs/development.md.
 
 ==============================================================================
 2. REQUIREMENTS                                           *jsoncrack-requirements*
