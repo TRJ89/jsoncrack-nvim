@@ -45,6 +45,10 @@ function fixture(name: string): string {
       });
     case "details-nested-array":
       return JSON.stringify({ 'a.b"c': [[{ value: "first" }], [{ value: "second" }]] });
+    case "deep-details-path": {
+      const key = `level.${"segment.".repeat(80)}`;
+      return JSON.stringify({ [key]: { leaf: "deep value" } });
+    }
     case "current-input":
       return JSON.stringify({ stale: Array.from({ length: 100 }, (_, index) => index) });
     case "collapse-update":

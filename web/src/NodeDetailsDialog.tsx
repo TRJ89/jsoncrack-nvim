@@ -148,8 +148,8 @@ export function NodeDetailsDialog({ details, onClose, fallbackFocus }: Props): R
         </header>
         <div className="node-details-path-row">
           <div className="node-details-path">
-            <span className="node-details-label">JSON Path</span>
-            <code>{details.path}</code>
+            <span id="node-details-path-label" className="node-details-label">JSON Path</span>
+            <code aria-labelledby="node-details-path-label" tabIndex={0}>{details.path}</code>
           </div>
           <button type="button" onClick={() => void copy("path")}>Copy path</button>
         </div>

@@ -161,6 +161,33 @@ test("resolves nested array indices and escaped property names from renderer nod
   await expect(dialog.locator("pre")).toHaveText(JSON.stringify({ value: "first" }, null, 2));
 });
 
+test("keeps a long path scrollable while content and copy controls stay reachable", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 360, height: 500 });
+  await openCase(page, "deep-details-path");
+  await page.getByRole("button", { name: "Fit" }).click();
+  await clickRendererNode(page, "2");
+
+  const dialog = page.getByRole("dialog");
+  const path = `$[${JSON.stringify(`level.${"segment.".repeat(80)}`)}]`;
+  const pathCode = dialog.locator(".node-details-path code");
+  await expect(pathCode).toHaveText(path);
+  await expect.poll(() => pathCode.evaluate((element) =>
+    element.scrollHeight > element.clientHeight,
+  )).toBe(true);
+  await expect(dialog.getByRole("button", { name: "Copy path" })).toBeInViewport({ ratio: 1 });
+  await expect(dialog.getByRole("button", { name: "Copy content" })).toBeInViewport({ ratio: 1 });
+  await expect(dialog.locator("pre")).toHaveText('{\n  "leaf": "deep value"\n}');
+
+  await pathCode.hover();
+  const pathBounds = await pathCode.boundingBox();
+  if (!pathBounds) throw new Error("Expected the path viewport to be visible.");
+  await page.mouse.wheel(0, pathBounds.height);
+  await expect.poll(() => pathCode.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await pathCode.selectText();
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(path);
+  await page.screenshot({ path: testInfo.outputPath("node-details-long-path-narrow.png") });
+});
+
 test("does not repeat empty-root completion for an inline state-updating callback", async ({ page }) => {
   await openCase(page, "inline-empty-callback");
   const count = page.getByTestId("inline-completion-count");
