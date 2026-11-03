@@ -575,3 +575,40 @@ confirmed 5 manifested assets, 200 runtime package instances, and 110 license
 texts. Earlier full-suite sections and the later focused checks are recorded
 above; no claim is made that the final changes received a second complete
 `make check` run.
+
+## Node details readability — 2026-11-03
+
+`web/src/JsonContent.tsx` renders syntax-colored spans using the original JSON
+characters as React text. Focused dialog tests cover escaped quotes, literals,
+numbers, markup-like strings, exact reconstructed text, selection, and keyboard
+focus behavior. The final `npm --prefix web test` run passed 86 tests in 7
+files, and `npm --prefix web run typecheck` exited 0.
+
+The full renderer suite passed 32 tests (16 per browser) before the final
+scrollbar and short-landscape spacing refinements. After those refinements, the
+focused command
+`npm --prefix web run test:renderer -- --grep='long path scrollable|long Japanese JSON'`
+passed all 4 Chromium/Firefox cases. It exercises actual horizontal and
+vertical scrolling, PageDown, large desktop dimensions, and visible controls
+at 360 x 500 and 844 x 390. At 844 x 390, the long path, omission note, copy
+feedback, and copy controls remain visible while the JSON viewport remains at
+least 80 px high.
+
+Full-page screenshots with the long Japanese fixture are saved outside the
+repository at `/tmp/jsoncrack-readability-{chromium,firefox}-{desktop,narrow}.png`;
+the corresponding short-landscape screenshots are also in `/tmp`. The final
+Chromium desktop and narrow images were recaptured with Playwright's headless
+`--hide-scrollbars` default disabled and the pointer over the JSON viewport's
+scrollbar, so the styled track and thumb are visible. The regular Playwright
+headless screenshot path hides scrollbars by default; this setting affects the
+capture only, not the UI implementation.
+
+After `PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH make build`
+regenerated the tracked production `dist/`, `make test-e2e` passed all 14
+preview tests (7 per browser) against that distribution. This includes the
+hostile-data and CSP checks. The build reported the existing Vite advisory
+about chunks larger than 500 kB.
+
+After committing the regenerated assets, `PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH make verify-dist`
+rebuilt them and passed `python3 scripts/check_dist.py --check-tracked` with
+5 manifested assets, 200 runtime package instances, and 110 license texts.

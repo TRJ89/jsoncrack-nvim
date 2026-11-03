@@ -2,10 +2,10 @@
   "version": 1,
   "routes": {
     "/": "index.html",
-    "/assets/elk-api-CxKe5FBl.js": "assets/elk-api-CxKe5FBl.js",
-    "/assets/elk.bundled-C3vVO5_x.js": "assets/elk.bundled-C3vVO5_x.js",
-    "/assets/index-CJqBsS0e.css": "assets/index-CJqBsS0e.css",
-    "/assets/index-Cf2dODph.js": "assets/index-Cf2dODph.js",
+    "/assets/elk-api-CESquYXD.js": "assets/elk-api-CESquYXD.js",
+    "/assets/elk.bundled-CsLuoa2O.js": "assets/elk.bundled-CsLuoa2O.js",
+    "/assets/index-Cfv2Sm5o.js": "assets/index-Cfv2Sm5o.js",
+    "/assets/index-ZWk5t7NK.css": "assets/index-ZWk5t7NK.css",
     "/assets/reaflow-elk-worker-CCfXQ_VG.js": "assets/reaflow-elk-worker-CCfXQ_VG.js"
   }
 }

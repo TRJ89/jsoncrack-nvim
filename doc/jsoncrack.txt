@@ -89,8 +89,10 @@ arrays show their complete JSON values. Object nodes show direct primitive
 properties and empty containers; non-empty child containers are represented by
 their own nodes. Copy content and path separately, or close the modal with its
 close button, Escape, or a backdrop click. Empty {} and [] roots have a View
-details action. A new valid saved graph closes the modal; an invalid save keeps
-the last valid graph and its open details.
+details action. The modal expands to use most of the screen. Long JSON remains
+unwrapped, scrolls horizontally and vertically, and stays selectable. A new
+valid saved graph closes the modal; an invalid save keeps the last valid graph
+and its open details.
 
 ==============================================================================
 5. INPUT SUPPORT AND LIMITS                                  *jsoncrack-input*

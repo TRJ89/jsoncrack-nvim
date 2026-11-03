@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { GraphView } from "../../src/GraphView";
+import "../../src/style.css";
 
 function fixture(name: string): string {
   switch (name) {
@@ -32,6 +33,11 @@ function fixture(name: string): string {
       return JSON.stringify('<img src=x onerror="window.__xss=true">');
     case "long-string":
       return JSON.stringify("complete node detail value ".repeat(24));
+    case "readability":
+      return JSON.stringify(Object.fromEntries(Array.from({ length: 42 }, (_, index) => [
+        `日本語フィールド${String(index + 1).padStart(2, "0")}`,
+        "これは長い日本語の値です。幅に合わせて折り返さず、内容全体を読み取れるようにします。".repeat(7),
+      ])));
     case "details-object":
       return JSON.stringify({
         peer: { hidden: true },
@@ -47,7 +53,7 @@ function fixture(name: string): string {
       return JSON.stringify({ 'a.b"c': [[{ value: "first" }], [{ value: "second" }]] });
     case "deep-details-path": {
       const key = `level.${"segment.".repeat(80)}`;
-      return JSON.stringify({ [key]: { leaf: "deep value" } });
+      return JSON.stringify({ [key]: { leaf: "deep value", nested: { hidden: true } } });
     }
     case "current-input":
       return JSON.stringify({ stale: Array.from({ length: 100 }, (_, index) => index) });
@@ -133,12 +139,16 @@ function RendererHarness(): ReactElement {
     : handleRendered;
 
   return (
-    <main>
-      <GraphView json={json} onRendered={onRendered} onRenderError={handleRenderError} />
+    <main className="preview-app">
+      <section className="graph-region" aria-label="JSON graph preview">
+        <GraphView json={json} onRendered={onRendered} onRenderError={handleRenderError} />
+      </section>
       {useInlineCallback && (
-        <div data-testid="inline-completion-count">{inlineCompletionCount}</div>
+        <div data-testid="inline-completion-count" style={{ display: "none" }}>
+          {inlineCompletionCount}
+        </div>
       )}
-      <div data-testid="rendered-inputs">
+      <div data-testid="rendered-inputs" style={{ display: "none" }}>
         {completions.map((completion, index) => (
           <span
             key={`${completion.phase}-${index}`}
@@ -150,7 +160,7 @@ function RendererHarness(): ReactElement {
           </span>
         ))}
       </div>
-      <div data-testid="render-errors">{errors.join("\n")}</div>
+      <div data-testid="render-errors" style={{ display: "none" }}>{errors.join("\n")}</div>
     </main>
   );
 }

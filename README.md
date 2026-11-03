@@ -84,7 +84,9 @@ arrays show their complete JSON values. Object nodes show their direct primitive
 properties and empty containers; non-empty child containers have their own
 nodes and are summarized in the dialog. Content and path can be copied
 separately, and the dialog closes with its close button, Escape, or a backdrop
-click. Empty `{}` and `[]` roots include a **View details** action. A new valid
+click. The dialog uses most of the available screen; long JSON stays on one
+line and can be scrolled horizontally and vertically. Its text remains
+selectable. Empty `{}` and `[]` roots include a **View details** action. A new valid
 saved graph closes the dialog; an invalid save retains the last valid graph and
 its open details.
 

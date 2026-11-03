@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
 import type { NodeDetails } from "./nodeDetails";
+import { JsonContent } from "./JsonContent";
 import "./GraphView.css";
 
 type CopyField = "content" | "path";
@@ -168,8 +169,13 @@ export function NodeDetailsDialog({ details, onClose, fallbackFocus }: Props): R
           {details.omittedChildContainers && (
             <p className="node-details-note">Child containers are shown as separate nodes.</p>
           )}
-          <pre className="node-details-content" style={{ userSelect: "text" }}>
-            {details.content}
+          <pre
+            className="node-details-content"
+            style={{ userSelect: "text" }}
+            tabIndex={0}
+            aria-label="JSON content"
+          >
+            <JsonContent content={details.content} />
           </pre>
         </section>
       </div>

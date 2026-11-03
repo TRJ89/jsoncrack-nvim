@@ -46,9 +46,28 @@ describe("NodeDetailsDialog", () => {
       <NodeDetailsDialog details={{ content, path: "$" }} onClose={() => undefined} />,
     );
 
-    expect(screen.getByText(content)).toBeInTheDocument();
+    const pre = container.querySelector("pre.node-details-content");
+    expect(pre).toBeInTheDocument();
+    expect(pre?.textContent).toBe(content);
     expect(container.querySelector("img, script")).toBeNull();
-    expect(screen.getByText(content).closest("pre")).toHaveStyle({ userSelect: "text" });
+    expect(pre).toHaveStyle({ userSelect: "text" });
+  });
+
+  it("highlights JSON token types while preserving the exact source text", () => {
+    const content = "{\n  \"quoted\\\"key\": \"line\\n<img>\",\n  \"count\": 12,\n  \"enabled\": true,\n  \"absent\": null,\n  \"disabled\": false\n}";
+    const { container } = render(
+      <NodeDetailsDialog details={{ content, path: "$" }} onClose={() => undefined} />,
+    );
+    const pre = container.querySelector("pre.node-details-content");
+    const tokenSpans = Array.from(pre?.querySelectorAll("span") ?? []);
+
+    expect(tokenSpans.map((span) => span.textContent).join("")).toBe(content);
+    expect(pre?.querySelector(".json-token-key")?.textContent).toBe('"quoted\\"key"');
+    expect(pre?.querySelector(".json-token-number")?.textContent).toBe("12");
+    expect(Array.from(pre?.querySelectorAll(".json-token-literal") ?? [], (span) => span.textContent))
+      .toEqual(["true", "null", "false"]);
+    expect(pre?.querySelector(".json-token-string")?.textContent).toBe('"line\\n<img>"');
+    expect(pre?.querySelector("img, script")).toBeNull();
   });
 
   it("closes from the close button", () => {
@@ -92,12 +111,12 @@ describe("NodeDetailsDialog", () => {
     try {
       render(<DismissibleDialog />);
       const close = screen.getByRole("button", { name: "Close node details" });
-      const copyContent = screen.getByRole("button", { name: "Copy content" });
+      const content = screen.getByLabelText("JSON content");
       expect(close).toHaveFocus();
 
       fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
-      expect(copyContent).toHaveFocus();
-      fireEvent.keyDown(copyContent, { key: "Tab" });
+      expect(content).toHaveFocus();
+      fireEvent.keyDown(content, { key: "Tab" });
       expect(close).toHaveFocus();
 
       fireEvent.click(close);

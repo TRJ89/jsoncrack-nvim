@@ -170,13 +170,17 @@ test("keeps a long path scrollable while content and copy controls stay reachabl
   const dialog = page.getByRole("dialog");
   const path = `$[${JSON.stringify(`level.${"segment.".repeat(80)}`)}]`;
   const pathCode = dialog.locator(".node-details-path code");
+  const content = dialog.locator("pre.node-details-content");
+  const copyPath = dialog.getByRole("button", { name: "Copy path" });
+  const copyContent = dialog.getByRole("button", { name: "Copy content" });
   await expect(pathCode).toHaveText(path);
   await expect.poll(() => pathCode.evaluate((element) =>
     element.scrollHeight > element.clientHeight,
   )).toBe(true);
-  await expect(dialog.getByRole("button", { name: "Copy path" })).toBeInViewport({ ratio: 1 });
-  await expect(dialog.getByRole("button", { name: "Copy content" })).toBeInViewport({ ratio: 1 });
-  await expect(dialog.locator("pre")).toHaveText('{\n  "leaf": "deep value"\n}');
+  await expect(copyPath).toBeInViewport({ ratio: 1 });
+  await expect(copyContent).toBeInViewport({ ratio: 1 });
+  await expect(content).toHaveText('{\n  "leaf": "deep value"\n}');
+  await expect(dialog.getByText("Child containers are shown as separate nodes.")).toBeVisible();
 
   await pathCode.hover();
   const pathBounds = await pathCode.boundingBox();
@@ -186,6 +190,103 @@ test("keeps a long path scrollable while content and copy controls stay reachabl
   await pathCode.selectText();
   expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(path);
   await page.screenshot({ path: testInfo.outputPath("node-details-long-path-narrow.png") });
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(pathCode).toBeInViewport({ ratio: 1 });
+  await expect(copyPath).toBeInViewport({ ratio: 1 });
+  await expect(copyContent).toBeInViewport({ ratio: 1 });
+  await expect(dialog.getByText("Child containers are shown as separate nodes.")).toBeVisible();
+  expect((await content.boundingBox())?.height).toBeGreaterThan(0);
+  await copyContent.click();
+  await expect(dialog.locator(".node-details-feedback")).toHaveText(
+    /^(Content copied\.|Could not copy content\. Select and copy the text instead\.)$/,
+  );
+  expect((await content.boundingBox())?.height).toBeGreaterThanOrEqual(80);
+  await expect(content).toBeInViewport({ ratio: 1 });
+  await page.screenshot({
+    path: `/tmp/jsoncrack-readability-${testInfo.project.name}-short-landscape.png`,
+    fullPage: true,
+  });
+});
+
+test("keeps long Japanese JSON readable and controls reachable across viewport sizes", async ({ page }, testInfo) => {
+  const data = Object.fromEntries(Array.from({ length: 42 }, (_, index) => [
+    `日本語フィールド${String(index + 1).padStart(2, "0")}`,
+    "これは長い日本語の値です。幅に合わせて折り返さず、内容全体を読み取れるようにします。".repeat(7),
+  ]));
+  const expectedContent = JSON.stringify(data, null, 2);
+  const dialog = page.getByRole("dialog");
+  const content = dialog.locator("pre.node-details-content");
+  const copyPath = dialog.getByRole("button", { name: "Copy path" });
+  const copyContent = dialog.getByRole("button", { name: "Copy content" });
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openCase(page, "readability");
+  await clickRendererNode(page, "1");
+  await expect(content).toHaveText(expectedContent);
+  await expect(dialog.locator("code")).toHaveText("$");
+
+  const desktopBox = await dialog.boundingBox();
+  expect(desktopBox?.width).toBeGreaterThan(800);
+  expect(desktopBox?.height).toBeGreaterThan(760);
+  await expect(copyPath).toBeInViewport({ ratio: 1 });
+  await expect(copyContent).toBeInViewport({ ratio: 1 });
+  await expect.poll(() => content.evaluate((element) =>
+    element.scrollWidth > element.clientWidth && element.scrollHeight > element.clientHeight,
+  )).toBe(true);
+  expect(await content.evaluate((element) => getComputedStyle(element).scrollbarColor))
+    .not.toBe("auto");
+  await page.screenshot({
+    path: `/tmp/jsoncrack-readability-${testInfo.project.name}-desktop.png`,
+    fullPage: true,
+  });
+
+  await content.hover();
+  await page.mouse.wheel(240, 0);
+  await expect.poll(() => content.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+  await page.mouse.wheel(0, 260);
+  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await content.focus();
+  await page.keyboard.press("PageDown");
+  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await content.evaluate((element) => {
+    element.scrollTop = 0;
+    element.scrollLeft = 0;
+  });
+  const desktopContentBox = await content.boundingBox();
+  if (!desktopContentBox) throw new Error("Expected the JSON viewport to be visible.");
+  await page.mouse.move(desktopContentBox.x + desktopContentBox.width - 5, desktopContentBox.y + 5);
+  await page.screenshot({
+    path: `/tmp/jsoncrack-readability-${testInfo.project.name}-desktop.png`,
+    fullPage: true,
+  });
+
+  for (const viewport of [
+    { name: "narrow", width: 360, height: 500, minHeight: 450 },
+    { name: "short-landscape", width: 844, height: 390, minHeight: 332 },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const bounds = await dialog.boundingBox();
+    expect(bounds?.width).toBeGreaterThan(viewport.width * 0.9);
+    expect(bounds?.height).toBeGreaterThan(viewport.minHeight);
+    await expect(copyPath).toBeInViewport({ ratio: 1 });
+    await expect(copyContent).toBeInViewport({ ratio: 1 });
+    await expect.poll(() => content.evaluate((element) =>
+      element.scrollWidth > element.clientWidth && element.scrollHeight > element.clientHeight,
+    )).toBe(true);
+    if (viewport.name === "narrow") {
+      const narrowContentBox = await content.boundingBox();
+      if (!narrowContentBox) throw new Error("Expected the JSON viewport to be visible.");
+      await page.mouse.move(narrowContentBox.x + narrowContentBox.width - 5, narrowContentBox.y + 5);
+      await page.screenshot({
+        path: `/tmp/jsoncrack-readability-${testInfo.project.name}-narrow.png`,
+        fullPage: true,
+      });
+    }
+  }
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
 });
 
 test("does not repeat empty-root completion for an inline state-updating callback", async ({ page }) => {
