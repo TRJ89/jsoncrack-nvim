@@ -537,3 +537,19 @@ containers already represented by separate graph nodes, and explain that
 omission. Array nodes show their actual complete array value. These rules,
 including nested-array path recovery for the pinned parser's empty `path`, are
 also documented in the READMEs and vimdoc.
+
+## Node details copy feedback fix — 2026-11-03
+
+The focused overlap regression test first failed as expected: after path and
+content copies were started before either clipboard promise settled, content
+failure feedback appeared but the successful path copy feedback was omitted
+(10 tests passed, 1 failed). After moving request generations to per-field
+counters while invalidating both fields on close, unmount, and details change,
+`PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH npm --prefix web run test -- tests/NodeDetailsDialog.test.tsx`
+passed all 11 dialog tests. The same pinned Node PATH with
+`npm --prefix web run typecheck` exited 0. `PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH make build`
+exited 0 and regenerated `dist`; Vite printed its existing warning about
+chunks larger than 500 kB. Post-commit
+`PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH make verify-dist` passed;
+the tracked rebuild matched `dist` and reported 5 manifested assets, 200
+runtime package instances, and 110 license texts.

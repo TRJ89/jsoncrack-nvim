@@ -22,10 +22,15 @@ export function NodeDetailsDialog({ details, onClose, fallbackFocus }: Props): R
   const fallbackFocusRef = useRef(fallbackFocus);
   const detailsRef = useRef(details);
   const mountedRef = useRef(false);
-  const copyRequestRef = useRef(0);
+  const copyRequestsRef = useRef<Record<CopyField, number>>({ content: 0, path: 0 });
   const [feedback, setFeedback] = useState<Partial<Record<CopyField, string>>>({});
   fallbackFocusRef.current = fallbackFocus;
   detailsRef.current = details;
+
+  const invalidateCopyRequests = (): void => {
+    copyRequestsRef.current.content += 1;
+    copyRequestsRef.current.path += 1;
+  };
 
   useEffect(() => {
     const activeElement = document.activeElement;
@@ -39,7 +44,7 @@ export function NodeDetailsDialog({ details, onClose, fallbackFocus }: Props): R
 
     return () => {
       mountedRef.current = false;
-      copyRequestRef.current += 1;
+      invalidateCopyRequests();
       if (previousFocus?.isConnected) {
         previousFocus.focus();
       } else {
@@ -49,25 +54,25 @@ export function NodeDetailsDialog({ details, onClose, fallbackFocus }: Props): R
   }, []);
 
   useEffect(() => {
-    copyRequestRef.current += 1;
+    invalidateCopyRequests();
     setFeedback({});
   }, [details]);
 
   const close = (): void => {
-    copyRequestRef.current += 1;
+    invalidateCopyRequests();
     onClose();
   };
 
   const copy = async (field: CopyField): Promise<void> => {
     const value = field === "content" ? details.content : details.path;
     const requestedDetails = details;
-    const request = ++copyRequestRef.current;
+    const request = ++copyRequestsRef.current[field];
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
       await navigator.clipboard.writeText(value);
       if (
         mountedRef.current &&
-        request === copyRequestRef.current &&
+        request === copyRequestsRef.current[field] &&
         detailsRef.current === requestedDetails
       ) {
         setFeedback((current) => ({
@@ -78,7 +83,7 @@ export function NodeDetailsDialog({ details, onClose, fallbackFocus }: Props): R
     } catch {
       if (
         mountedRef.current &&
-        request === copyRequestRef.current &&
+        request === copyRequestsRef.current[field] &&
         detailsRef.current === requestedDetails
       ) {
         setFeedback((current) => ({

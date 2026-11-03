@@ -144,6 +144,36 @@ describe("NodeDetailsDialog", () => {
     expect(writeText).toHaveBeenNthCalledWith(2, firstDetails.path);
   });
 
+  it("reports both outcomes when content and path copies overlap", async () => {
+    let resolvePath: (() => void) | undefined;
+    let rejectContent: ((error: Error) => void) | undefined;
+    const writeText = vi.fn((value: string) => {
+      if (value === firstDetails.path) {
+        return new Promise<void>((resolve) => { resolvePath = resolve; });
+      }
+      return new Promise<void>((_resolve, reject) => { rejectContent = reject; });
+    });
+    setClipboard(writeText);
+    render(<NodeDetailsDialog details={firstDetails} onClose={() => undefined} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy path" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy content" }));
+    expect(writeText).toHaveBeenNthCalledWith(1, firstDetails.path);
+    expect(writeText).toHaveBeenNthCalledWith(2, firstDetails.content);
+
+    await act(async () => {
+      resolvePath?.();
+      rejectContent?.(new Error("clipboard denied"));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Path copied.")).toBeInTheDocument();
+      expect(screen.getByText("Could not copy content. Select and copy the text instead.")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Could not copy path. Select and copy the text instead.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Content copied.")).not.toBeInTheDocument();
+  });
+
   it("reports clipboard failure for the requested field without success feedback", async () => {
     setClipboard(vi.fn().mockRejectedValue(new Error("clipboard denied")));
     render(<NodeDetailsDialog details={firstDetails} onClose={() => undefined} />);
