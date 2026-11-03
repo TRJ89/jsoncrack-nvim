@@ -553,3 +553,25 @@ chunks larger than 500 kB. Post-commit
 `PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH make verify-dist` passed;
 the tracked rebuild matched `dist` and reported 5 manifested assets, 200
 runtime package instances, and 110 license texts.
+
+## Node details review and merge verification — 2026-11-03
+
+Review identified a long JSON Path that could push content and copy controls
+out of the bounded dialog. The path now has its own bounded, keyboard-focusable
+scroll region. The narrow 360 x 500 viewport regression
+(`npm --prefix web run test:renderer -- --grep='long path scrollable'`)
+failed before the fix and passed in Chromium and Firefox afterward (2/2).
+It checks full path text, scrolling, selection, content, and visible copy
+controls using a real node click. A long-key shallow fixture isolates this
+layout condition; this test does not claim maximum-depth graph navigation
+coverage. The narrow screenshot was also visually inspected. Typecheck and
+post-commit distribution verification passed for this fix.
+
+Independent task review, the scoped layout re-review, final branch review,
+and the clipboard fix re-review completed with no unresolved findings. After
+fast-forward integration into main, `npm --prefix web run test` passed all
+85 tests in 7 files, and `python3 scripts/check_dist.py --check-tracked`
+confirmed 5 manifested assets, 200 runtime package instances, and 110 license
+texts. Earlier full-suite sections and the later focused checks are recorded
+above; no claim is made that the final changes received a second complete
+`make check` run.
