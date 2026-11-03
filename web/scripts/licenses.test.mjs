@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { collectRuntimePackagePaths } from "./licenses.mjs";
+import { copyFile, mkdtemp, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { collectRuntimePackagePaths, generateNotices } from "./licenses.mjs";
 
 test("runtime closure follows lockfile dependencies and resolves nested production copies", () => {
   const lock = {
@@ -46,4 +49,29 @@ test("runtime closure fails when a required lockfile dependency cannot be resolv
       }),
     /required runtime dependency missing from node_modules\/app is absent from the lockfile/,
   );
+});
+
+test("generated notices identify the embedded worker source as available under EPL-2.0", async (t) => {
+  const distributionDirectory = await mkdtemp(join(tmpdir(), "jsoncrack-license-notices-"));
+  t.after(() => rm(distributionDirectory, { recursive: true, force: true }));
+
+  const assetsDirectory = new URL("../../dist/assets/", import.meta.url);
+  const workerAssets = (await readdir(assetsDirectory)).filter((name) =>
+    name.startsWith("reaflow-elk-worker-"),
+  );
+  assert.equal(workerAssets.length, 1);
+  await mkdir(join(distributionDirectory, "assets"), { recursive: true });
+  await copyFile(
+    new URL(`../../dist/assets/${workerAssets[0]}`, import.meta.url),
+    join(distributionDirectory, "assets", workerAssets[0]),
+  );
+
+  await generateNotices({ distributionDirectory });
+  const notices = await readFile(join(distributionDirectory, "THIRD-PARTY-NOTICES.md"), "utf8");
+
+  assert.match(
+    notices,
+    /The source code for the embedded worker is available under EPL-2\.0 in the pinned \[elkjs 0\.10\.0 source archive\]\(https:\/\/github\.com\/kieler\/elkjs\/archive\/refs\/tags\/0\.10\.0\.tar\.gz\)/,
+  );
+  assert.ok(notices.includes("[Eclipse ELK 0.10.0 source archive](https://github.com/eclipse-elk/elk/archive/refs/tags/v0.10.0.tar.gz)"));
 });

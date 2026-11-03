@@ -99,3 +99,5 @@ The current assessment of the npm advisory finding is in the
 The project's own code is covered by [LICENSE](../LICENSE). The web
 distribution's dependency terms and license texts are listed separately in
 `dist/THIRD-PARTY-NOTICES.md` and `dist/licenses/`.
+See the [licensing evidence review](licensing-review.md) for the current
+package-attribution evidence and unresolved questions.

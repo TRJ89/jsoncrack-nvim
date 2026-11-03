@@ -664,3 +664,33 @@ was not enabled or checked in repository settings. A repository administrator
 still needs to enable that setting and confirm the reporting form and
 notifications before public release; the local documents do not change remote
 settings.
+
+## Public readiness Task 2 — 2026-11-03
+
+The exact npm tarballs for the five MIT entries with placeholder notices were
+recovered from the local npm cache. Their computed SHA-512 SRI values matched
+`web/package-lock.json`; package contents and the pinned source trees provided
+no package-specific copyright line. `docs/licensing-review.md` records each
+integrity value, package evidence, the scoped/unscoped reaviz provenance gap,
+and the remaining maintainer/legal-review decision. Its source-history scope
+is limited to license-like file paths in the pinned trees and path history; it
+does not claim a semantic scan of every historical file or every branch.
+
+A Vite module-graph inspection found emitted modules for
+`@reaviz/react-use-fuzzy`, `create-global-state-hook`, `defaulty`, and
+`use-composed-ref`; `dotignore` was absent from the emitted bundle and remains
+in the broader lockfile runtime closure. The exact rendered sizes and source
+asset are recorded in the licensing review.
+
+The focused generated-notice test first failed because the source-availability
+sentence did not connect the embedded worker source to EPL-2.0. After the
+wording change, `node web/scripts/licenses.test.mjs` passed all 3 tests, and
+`PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH npm --prefix web run test:licenses`
+exited 0. `PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH make build`
+exited 0 and generated notices for 200 runtime package instances and 110
+license texts. Vite printed its existing warning about chunks larger than
+500 kB. After committing the notice, test, and documentation changes,
+`PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:$PATH make verify-dist` rebuilt
+the distribution and passed `python3 scripts/check_dist.py --check-tracked`
+with 5 manifested assets, 200 runtime package instances, and 110 license
+texts.
