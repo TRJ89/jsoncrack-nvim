@@ -79,6 +79,15 @@ longer displayed, is unloaded, wiped, or renamed, or when Neovim exits. If you
 close the browser tab, use `:JsonCrackPreviewOpen` to show the page again;
 closing a tab alone does not stop the server.
 
+Click a graph node to open its full content and JSON Path. Primitive values and
+arrays show their complete JSON values. Object nodes show their direct primitive
+properties and empty containers; non-empty child containers have their own
+nodes and are summarized in the dialog. Content and path can be copied
+separately, and the dialog closes with its close button, Escape, or a backdrop
+click. Empty `{}` and `[]` roots include a **View details** action. A new valid
+saved graph closes the dialog; an invalid save retains the last valid graph and
+its open details.
+
 ## Limits
 
 Only saved, readable regular files with a `.json`, `.yaml`, or `.yml` extension

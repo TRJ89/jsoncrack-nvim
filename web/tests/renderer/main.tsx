@@ -30,6 +30,21 @@ function fixture(name: string): string {
       return "{broken";
     case "markup":
       return JSON.stringify('<img src=x onerror="window.__xss=true">');
+    case "long-string":
+      return JSON.stringify("complete node detail value ".repeat(24));
+    case "details-object":
+      return JSON.stringify({
+        peer: { hidden: true },
+        target: {
+          count: 2,
+          emptyObject: {},
+          emptyArray: [],
+          child: { enabled: true },
+          items: [1],
+        },
+      });
+    case "details-nested-array":
+      return JSON.stringify({ 'a.b"c': [[{ value: "first" }], [{ value: "second" }]] });
     case "current-input":
       return JSON.stringify({ stale: Array.from({ length: 100 }, (_, index) => index) });
     case "collapse-update":

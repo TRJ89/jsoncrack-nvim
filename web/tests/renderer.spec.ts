@@ -40,6 +40,8 @@ test.afterEach(async ({ page }) => {
 });
 
 const openCase = (page: Page, name: string) => page.goto(`/?case=${name}`);
+const clickRendererNode = (page: Page, id: string) =>
+  page.locator(`[data-testid="graph"] svg g[id$="-node-${id}"] > rect`).click();
 
 const waitForAnimationFrames = (page: Page, count: number) =>
   page.evaluate((frameCount) => new Promise<void>((resolve) => {
@@ -99,11 +101,64 @@ test("renders number, boolean, and null roots", async ({ page }) => {
   }
 });
 
-test("shows a clear label for empty objects and arrays", async ({ page }) => {
+test("shows a clear label and actual details for empty objects and arrays", async ({ page }) => {
   await openCase(page, "empty-object");
   await expect(page.getByRole("status")).toContainText("Empty JSON object");
+  await page.getByRole("button", { name: "View details" }).click();
+  await expect(page.getByRole("dialog").locator("pre")).toHaveText("{}");
+  await expect(page.getByRole("dialog").locator("code")).toHaveText("$");
+  await page.keyboard.press("Escape");
+
   await openCase(page, "empty-array");
   await expect(page.getByRole("status")).toContainText("Empty JSON array");
+  await page.getByRole("button", { name: "View details" }).click();
+  await expect(page.getByRole("dialog").locator("pre")).toHaveText("[]");
+  await expect(page.getByRole("dialog").locator("code")).toHaveText("$");
+});
+
+test("opens full long values and node-local object details with keyboard and copy controls", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await openCase(page, "long-string");
+  await clickRendererNode(page, "1");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("pre")).toHaveText(
+    JSON.stringify("complete node detail value ".repeat(24), null, 2),
+  );
+  await page.screenshot({ path: testInfo.outputPath("node-details-narrow-long-string.png") });
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await openCase(page, "details-object");
+  await clickRendererNode(page, "3");
+  await expect(dialog.locator("code")).toHaveText("$.target");
+  await expect(dialog.locator("pre")).toHaveText(
+    JSON.stringify({ count: 2, emptyObject: {}, emptyArray: [] }, null, 2),
+  );
+  await expect(dialog.getByText("Child containers are shown as separate nodes.")).toBeVisible();
+  await dialog.screenshot({ path: testInfo.outputPath("node-details-dialog.png") });
+
+  await dialog.getByRole("button", { name: "Copy path" }).click();
+  await expect(dialog.locator('[aria-live="polite"]')).toHaveText(
+    /^(Path copied\.|Could not copy path\. Select and copy the text instead\.)$/,
+  );
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
+test("resolves nested array indices and escaped property names from renderer nodes", async ({ page }) => {
+  await openCase(page, "details-nested-array");
+  const dialog = page.getByRole("dialog");
+
+  await clickRendererNode(page, "2");
+  await expect(dialog.locator("code")).toHaveText('$["a.b\\"c"][0]');
+  await expect(dialog.locator("pre")).toHaveText(JSON.stringify([{ value: "first" }], null, 2));
+
+  await page.keyboard.press("Escape");
+  await clickRendererNode(page, "3");
+  await expect(dialog.locator("code")).toHaveText('$["a.b\\"c"][0][0]');
+  await expect(dialog.locator("pre")).toHaveText(JSON.stringify({ value: "first" }, null, 2));
 });
 
 test("does not repeat empty-root completion for an inline state-updating callback", async ({ page }) => {

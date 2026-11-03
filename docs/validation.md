@@ -501,3 +501,39 @@ checks, exposure through the current build is low. Accept this targeted
 advisory for the current lockfile and bundle, and reassess after dependency
 updates. This is not a blanket audit exception or a claim that all
 dependencies are vulnerability-free.
+
+## Node details — 2026-11-03
+
+The node-local resolver and dialog were developed with focused Vitest checks
+against the pinned `jsoncrack-react@1.0.5` parser. RED runs of
+`npm --prefix web run test -- tests/nodeDetails.test.ts` first failed all 6
+resolver expectations. As coverage expanded, 3 of 8 tests failed for direct
+object values, container-only objects, and valid root `null`; a later
+special-key case also failed (1 of 9) until the projection preserved
+`__proto__`. The initial dialog test run could not load the not-yet-created
+component. GREEN evidence includes 9/9 resolver tests, 9/9 dialog tests, and
+84/84 tests across all 7 Vitest files. The RED/GREEN commands and counts are
+reproduced here so the evidence does not depend on local scratch logs.
+
+The first sequential `PATH=/home/zy/.nvm/versions/node/v22.23.4/bin:/tmp/jsoncrack-node-details-tools:$PATH make check`
+exited 2 at Preview E2E. Its preceding checks passed: Stylua/Selene,
+TypeScript, Python compileall and Pyright; 52 Python tests; 25 Lua tests; 84
+Vitest tests; 2 license tests; 28 renderer tests (14 per browser); and 8
+process-integration tests. The four E2E failures were the two new browser
+interactions targeting the pinned renderer's non-clickable `foreignObject`,
+plus the preview serving the previous committed `dist` bundle before the new
+feature had been built. After changing those interactions to click the real
+SVG node rectangle and rebuilding `dist`, focused Chromium E2E passed 2/2 and
+`make test-e2e` passed 14/14 (7 Chromium, 7 Firefox). The hostile-data dialog
+assertion checks the exact JSON-escaped text; the test also found no injected
+markup or external requests. After committing the regenerated bundle,
+`make verify-dist` passed and reported 5 manifested assets, 200 runtime
+package instances, and 110 license texts. The build emitted the existing
+Vite large-chunk warning.
+
+The 682 x 340 open-dialog screenshot was captured and visually inspected.
+Object node details show direct scalar properties and empty containers, omit non-empty child
+containers already represented by separate graph nodes, and explain that
+omission. Array nodes show their actual complete array value. These rules,
+including nested-array path recovery for the pinned parser's empty `path`, are
+also documented in the READMEs and vimdoc.

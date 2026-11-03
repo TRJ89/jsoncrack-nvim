@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GraphView } from "../src/GraphView";
 
@@ -7,22 +7,32 @@ const rendererState = vi.hoisted(() => ({
   renderedNodeId: "old",
   renderedText: "old",
   opacity: "1",
+  useActualGraph: false,
 }));
 
 vi.mock("jsoncrack-react", async () => {
   const React = await import("react");
+  const actual = await vi.importActual<typeof import("jsoncrack-react")>("jsoncrack-react");
   return {
     JSONCrack: (props: {
       json: string;
-      onParse?: (graph: { nodes: Array<{ id: string }>; edges: [] }) => void;
+      onParse?: (graph: import("jsoncrack-react").GraphData) => void;
+      onNodeClick?: (node: import("jsoncrack-react").NodeData) => void;
     }) => {
       if (JSON.parse(props.json) === "throw") throw new Error("Simulated renderer failure");
       const [instanceId] = React.useState(() => ++rendererState.instanceCount);
+      const actualGraph = actual.parseGraph(props.json);
+      const graph = rendererState.useActualGraph
+        ? actualGraph
+        : {
+            nodes: [{ id: String(JSON.parse(props.json)) }] as import("jsoncrack-react").NodeData[],
+            edges: [],
+          };
+      const clickNode = actualGraph.nodes.find((node) =>
+        JSON.stringify(node.path) === JSON.stringify(["target"]),
+      ) ?? actualGraph.nodes[0];
       React.useEffect(() => {
-        props.onParse?.({
-          nodes: [{ id: String(JSON.parse(props.json)) }],
-          edges: [],
-        });
+        props.onParse?.(graph);
       }, [props.json, props.onParse]);
       return React.createElement(
         "div",
@@ -31,6 +41,11 @@ vi.mock("jsoncrack-react", async () => {
           "data-instance-id": instanceId,
           "data-json": props.json,
         },
+        React.createElement("button", {
+          type: "button",
+          "data-testid": "click-node",
+          onClick: () => clickNode && props.onNodeClick?.(clickNode),
+        }, "Select node"),
         React.createElement(
           "div",
           {
@@ -41,10 +56,16 @@ vi.mock("jsoncrack-react", async () => {
             "svg",
             null,
             React.createElement("g", null),
-            React.createElement("foreignObject", {
-              "data-id": `node-${rendererState.renderedNodeId}`,
-              "data-key": rendererState.renderedText,
-            }),
+            ...(rendererState.useActualGraph
+              ? graph.nodes.map((node) => React.createElement("foreignObject", {
+                  key: node.id,
+                  "data-id": `node-${node.id}`,
+                  "data-key": node.id,
+                }))
+              : [React.createElement("foreignObject", {
+                  "data-id": `node-${rendererState.renderedNodeId}`,
+                  "data-key": rendererState.renderedText,
+                })]),
           ),
         ),
       );
@@ -63,6 +84,7 @@ describe("GraphView renderer lifecycle", () => {
     rendererState.renderedNodeId = "old";
     rendererState.renderedText = "old";
     rendererState.opacity = "1";
+    rendererState.useActualGraph = false;
     vi.stubGlobal("requestAnimationFrame", animationFrame);
     vi.stubGlobal("cancelAnimationFrame", (handle: number) => window.clearTimeout(handle));
   });
@@ -118,5 +140,34 @@ describe("GraphView renderer lifecycle", () => {
       previousInstanceId,
     );
     consoleError.mockRestore();
+  });
+
+  it("opens node-local details from the renderer callback and closes on valid replacement", () => {
+    rendererState.useActualGraph = true;
+    const view = render(<GraphView json='{"target":{"value":"visible"}}' />);
+    const opener = screen.getByTestId("click-node");
+    opener.focus();
+    fireEvent.click(opener);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("$.target")).toBeInTheDocument();
+    expect(screen.getByRole("dialog").querySelector("pre")?.textContent).toBe(
+      '{\n  "value": "visible"\n}',
+    );
+
+    view.rerender(<GraphView json='{"target":{"value":"updated"}}' />);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("graph")).toHaveFocus();
+  });
+
+  it("opens details for an empty root container from the fallback action", () => {
+    render(<GraphView json="{}" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "View details" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("$")).toBeInTheDocument();
+    expect(screen.getByRole("dialog").querySelector("pre")?.textContent).toBe("{}");
   });
 });

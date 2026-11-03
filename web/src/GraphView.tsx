@@ -8,9 +8,11 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { JSONCrack, type GraphData } from "jsoncrack-react";
+import { JSONCrack, type GraphData, type NodeData } from "jsoncrack-react";
 import "jsoncrack-react/style.css";
 import "./GraphView.css";
+import { NodeDetailsDialog } from "./NodeDetailsDialog";
+import { resolveNodeDetails, resolveRootDetails, type NodeDetails } from "./nodeDetails";
 
 const MAX_RENDERABLE_NODES = 1500;
 const GRAPH_HEIGHT = "600px";
@@ -94,6 +96,11 @@ export function GraphView({
   const renderedVersionRef = useRef<number | null>(null);
   const parseErrorVersionRef = useRef(-1);
   const [parsed, setParsed] = useState<GraphState | null>(null);
+  const parsedRef = useRef<GraphState | null>(null);
+  const [selection, setSelection] = useState<{
+    version: number;
+    details: NodeDetails;
+  } | null>(null);
   const [parseError, setParseError] = useState<{
     version: number;
     message: string;
@@ -114,7 +121,9 @@ export function GraphView({
       ) {
         return;
       }
-      setParsed({ version, json, graph });
+      const current = { version, json, graph };
+      parsedRef.current = current;
+      setParsed(current);
     },
     [json, version],
   );
@@ -139,6 +148,21 @@ export function GraphView({
     },
     [json, onRenderError, version],
   );
+
+  const handleNodeClick = useCallback(
+    (node: NodeData) => {
+      const current = parsedRef.current;
+      if (!current || current.version !== version || current.json !== json) return;
+      const details = resolveNodeDetails(json, current.graph, node);
+      if (details) setSelection({ version, details });
+    },
+    [json, version],
+  );
+
+  const showEmptyRoot = useCallback(() => {
+    const details = resolveRootDetails(json);
+    if (details) setSelection({ version, details });
+  }, [json, version]);
 
   useEffect(() => {
     if (emptyRoot && versionRef.current === version && currentJsonRef.current === json) {
@@ -232,6 +256,8 @@ export function GraphView({
       className="graph-view"
       data-testid="graph"
       data-theme="dark"
+      tabIndex={-1}
+      aria-label="JSON graph"
       style={{ height: GRAPH_HEIGHT, width: "100%" }}
     >
       {currentError ? (
@@ -239,6 +265,7 @@ export function GraphView({
       ) : emptyRoot ? (
         <div role="status">
           {emptyRoot === "object" ? "Empty JSON object {}" : "Empty JSON array []"}
+          <button type="button" onClick={showEmptyRoot}>View details</button>
         </div>
       ) : (
         <GraphErrorBoundary key={version} onError={handleRenderError}>
@@ -253,6 +280,7 @@ export function GraphView({
             style={{ height: "100%", width: "100%" }}
             onParse={handleParse}
             onParseError={handleParseError}
+            onNodeClick={handleNodeClick}
             renderNodeLimitExceeded={(nodeCount, limit) => (
               <div role="status">
                 Too large to render: {nodeCount} nodes; limit is {limit}.
@@ -260,6 +288,13 @@ export function GraphView({
             )}
           />
         </GraphErrorBoundary>
+      )}
+      {selection?.version === version && (
+        <NodeDetailsDialog
+          details={selection.details}
+          onClose={() => setSelection(null)}
+          fallbackFocus={() => hostRef.current}
+        />
       )}
     </div>
   );

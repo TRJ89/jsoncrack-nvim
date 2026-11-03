@@ -25,14 +25,22 @@ test("renders saved changes, preserves the last valid graph, and reuses unchange
     const validRenderedAt = await lastRendered.getAttribute("datetime");
     expect(validRenderedAt).not.toBe(renderedAt);
 
+    await page.locator('[data-testid="graph"] svg g[id$="-node-1"] > rect').click();
+    const detailsDialog = page.getByRole("dialog");
+    await expect(detailsDialog.locator("code")).toHaveText("$");
+    await expect(detailsDialog.locator("pre")).toHaveText('{\n  "value": "visible"\n}');
+
     await preview.save("{");
     await expect(page.getByRole("alert")).toContainText("Input error");
     await expect(page.getByText("value: visible")).toBeVisible();
+    await expect(detailsDialog).toBeVisible();
+    await expect(detailsDialog.locator("pre")).toHaveText('{\n  "value": "visible"\n}');
     expect(await page.getByTestId("last-rendered").getAttribute("datetime")).toBe(validRenderedAt);
 
     await preview.save('{"value":"visible again"}');
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(page.getByText("value: visible again")).toBeVisible();
+    await expect(detailsDialog).toHaveCount(0);
     await expect.poll(() => lastRendered.getAttribute("datetime")).not.toBe(validRenderedAt);
     const recoveredRenderedAt = await lastRendered.getAttribute("datetime");
 
@@ -186,6 +194,10 @@ test("applies CSP, renders hostile data as text, and makes no external requests"
     const payload = '<img src=x onerror="window.__jsoncrackXss=1">';
     await preview.save(JSON.stringify({ payload }));
     await expect(page.getByText(payload)).toBeVisible();
+    await page.locator('[data-testid="graph"] svg g[id$="-node-1"] > rect').click();
+    const details = page.getByRole("dialog");
+    await expect(details.locator("pre")).toHaveText(JSON.stringify({ payload }, null, 2));
+    await expect(details.locator("img, script, [onerror]")).toHaveCount(0);
     await page.waitForTimeout(250);
     expect(await page.evaluate(() => (window as typeof window & { __jsoncrackXss?: number }).__jsoncrackXss)).toBe(0);
     await expect(page.locator('[data-testid="graph"] [onerror], [data-testid="graph"] script')).toHaveCount(0);
