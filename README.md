@@ -123,6 +123,9 @@ report a problem or request another environment. Include your operating system,
 Neovim version and setup, and the use case. I may consider support requests,
 but support for other environments is not guaranteed.
 
+For possible security vulnerabilities, follow the [security policy](SECURITY.md).
+Do not post vulnerability details in a public issue.
+
 ## Development
 
 Contributor setup, local-checkout loading, validation commands, and release

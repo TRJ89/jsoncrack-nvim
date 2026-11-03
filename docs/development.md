@@ -42,7 +42,8 @@ demand; there is no `setup()` call or build hook. The checkout must include
 - Python 3.10 or newer for the server and test tooling.
 - Node.js 22.23.4 and npm 10.9.9, pinned in `.node-version` and
   `web/package.json`.
-- Neovim 0.11.6 or newer for the full test suite.
+- Neovim 0.11.0 or newer for the supported minimum; the full pinned `make check`
+  job uses Neovim 0.11.6.
 - `plenary.nvim` checked out as a sibling at `../plenary.nvim` for Lua tests.
 - Stylua 2.6.0 and Selene 0.32.0 for Lua linting.
 - Playwright 1.64.1 with Chromium and Firefox for renderer and browser tests.
@@ -80,6 +81,17 @@ Before a release, run `make check`, confirm the hosted GitHub Actions results,
 and review the generated notices in `dist/THIRD-PARTY-NOTICES.md`,
 `dist/THIRD-PARTY-NOTICES.json`, and `dist/licenses/`. CI validates changes
 but does not publish artifacts.
+
+Before a public release, a repository administrator must enable GitHub private
+vulnerability reporting under **Settings → Security and quality → Advanced
+Security → Private vulnerability reporting**. Confirm that the repository's
+advisory form is available and that maintainers receive its notifications.
+See [GitHub's setup guide](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository)
+for the current settings steps.
+`SECURITY.md` links to the form and describes the fallback if it is unavailable;
+the document does not change GitHub settings. Confirm the hosted checks on the
+release candidate as well; local validation does not establish a hosted Actions
+result.
 
 The current assessment of the npm advisory finding is in the
 [2026-11-01 validation record](validation.md#npm-advisory-assessment-2026-11-01).

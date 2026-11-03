@@ -618,3 +618,49 @@ defects. After fast-forward integration into main, the complete web unit suite
 passed again (86/86), and the tracked distribution check passed with the same
 asset/package/license counts. No backend changes were made or backend suite
 rerun for this presentation-only refinement.
+
+## Public readiness Task 1 — 2026-11-03
+
+The CI workflow pins the existing Actions majors to official release commits:
+`actions/checkout` v4.4.0 (`11d5960a326750d5838078e36cf38b85af677262`),
+`actions/setup-python` v5.6.0 (`a26af69be951a213d495a4c3e4e4022e16d87065`),
+`actions/setup-node` v4.4.0 (`49933ea5288caeca8642d1e84afbd3f7d6820020`),
+`rhysd/action-setup-vim` v1.6.1
+(`febef33995d6649302e9d88dda81e071b68f16a7`), and
+`JohnnyMorganz/stylua-action` v5.0.0
+(`76fd70c03e6340ceaf673366712db9b20560b402`). All checkout steps disable
+credential persistence. The workflow's compatibility matrix now requires
+Neovim v0.11.0, stable, and nightly runs; nightly remains advisory.
+
+`.github/dependabot.yml` schedules grouped GitHub Actions and `/web` npm version
+updates weekly with `cooldown.default-days: 7` and no auto-merge configuration.
+The settings follow the current [GitHub Dependabot options
+reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference):
+both ecosystems support update groups and the default cooldown; cooldown applies
+to version updates, while security updates are not delayed.
+
+Local configuration checks passed: the workflow and Dependabot YAML parsed,
+the Task 1 matrix/pins/checkout settings and update schedules/groups/cooldowns
+matched the brief, and actionlint 1.7.12 exited 0. zizmor 1.32.0 ran in offline
+mode and exited 12 with one low `adhoc-packages` finding for the workflow's
+explicit `npm install --global npm@10.9.9` toolchain pin; no online GitHub
+metadata audit was available in that run.
+
+The official [Neovim v0.11.0 release](https://github.com/neovim/neovim/releases/tag/v0.11.0)
+Linux x86_64 tarball matched its upstream
+[`shasum.txt`](https://github.com/neovim/neovim/releases/download/v0.11.0/shasum.txt)
+entry: `fe0a5bc79e64c5e4d9f844cd96157ebd3919ef1343b329e9ebc3f455924cc7d6`.
+Against `NVIM v0.11.0` (LuaJIT 2.1.1741730670), the temporary clone at commit
+`7d914fd426a187435434fa417404aad847ee2699` with Plenary commit
+`74b06c6c75e4eeb3108ec01852001636d85a932b` passed `make test-lua` (25 tests)
+and `make test-integration` (8 tests). The test environment used Python 3.14.4,
+Node.js 22.23.4, npm 10.9.9, and a temporary XDG state/config/cache/data tree;
+Python 3.10 was not exercised in this local run. Logs are at
+`/tmp/jsoncrack-public-review/neovim-0.11.0/test-lua-verified.log` and
+`/tmp/jsoncrack-public-review/neovim-0.11.0/test-integration.log`.
+
+No GitHub-hosted Actions run was performed, and private vulnerability reporting
+was not enabled or checked in repository settings. A repository administrator
+still needs to enable that setting and confirm the reporting form and
+notifications before public release; the local documents do not change remote
+settings.
