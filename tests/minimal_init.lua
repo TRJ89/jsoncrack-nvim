@@ -1,6 +1,9 @@
 local root = vim.fn.getcwd()
 local plenary = root .. "/../plenary.nvim"
 
+-- Plenary runs files in parallel, and all instances share Neovim's state directory.
+vim.o.swapfile = false
+
 local function fail(message)
     vim.api.nvim_err_writeln("jsoncrack test bootstrap: " .. message)
     vim.cmd("cquit 1")

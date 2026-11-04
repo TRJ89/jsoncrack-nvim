@@ -208,7 +208,7 @@ describe("jsoncrack session lifecycle", function()
             return exited
         end, 3000))
         assert.are.equal(0, exit_code)
-        assert.is_true(support.port_is_closed(tonumber(port)))
+        assert.is_true(support.await_port_closed(tonumber(port), 3000))
     end)
 
     it("stops on buffer rename, unload, wipeout, and VimLeavePre", function()

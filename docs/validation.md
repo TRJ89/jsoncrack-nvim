@@ -731,3 +731,61 @@ The initial hosted CI run was created at
 It was queued when this publication record was written; this entry does not
 claim that hosted CI passed. The earlier local test results remain recorded
 above. Publication did not infer or alter third-party copyright notices.
+
+### Neovim setup action EXDEV diagnosis (2026-11-04)
+
+Hosted run `41769349946` failed in the pinned `rhysd/action-setup-vim`
+Neovim install with `EXDEV` while moving the extracted `nvim-linux-x86_64`
+directory from `/tmp/action-setup-vim-*` to `/home/runner/nvim-v0.11.6`.
+At action commit
+[`febef339`](https://github.com/rhysd/action-setup-vim/tree/febef33995d6649302e9d88dda81e071b68f16a7),
+`TmpDir.create()` uses Node's `os.tmpdir()`, and `downloadNeovim()` moves the
+unarchived directory from that temporary location into the runner home. The
+workflow now sets `TMPDIR` to `${{ runner.temp }}` for both Neovim setup steps;
+GitHub documents the Linux value as `/home/runner/work/_temp`, keeping the
+action's temporary extraction on the runner's home filesystem instead of
+`/tmp`'s separate tmpfs. See the pinned
+[`neovim.js`](https://github.com/rhysd/action-setup-vim/blob/febef33995d6649302e9d88dda81e071b68f16a7/src/neovim.js)
+and [`system.js`](https://github.com/rhysd/action-setup-vim/blob/febef33995d6649302e9d88dda81e071b68f16a7/src/system.js)
+implementations and the
+[GitHub runner context reference](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#runner-context).
+
+The same cross-device rename reproduced locally with Node (`/tmp` is tmpfs;
+the project home is ext4) and succeeded when `TMPDIR` pointed under the home
+filesystem. The hosted rerun after this change is pending; no CI success is
+claimed until that run completes.
+
+The same run also exposed an intermittent Plenary failure creating the shared
+Neovim swap directory (`E303`, already exists). The test-only minimal init
+now disables swapfiles before test buffers are created. A clean-XDG headless
+check confirmed a newly named and edited normal buffer had `swapfile=false`
+and did not create a swap directory. Local full Lua execution was unavailable
+because the sibling Plenary checkout was absent; hosted tests will verify it.
+A read-only review found no actionable defects in these two scoped fixes.
+
+### Shutdown probe correction (2026-11-04)
+
+Run <https://github.com/TRJ89/jsoncrack-nvim/actions/runs/41774445539>
+confirmed the Neovim install fix and passed the full check. Two compatibility
+jobs exposed a separate test-helper problem: a one-second TCP probe inside
+an outer three-second shutdown wait could abort the entire check before its
+overall deadline. The helper now uses one deadline with asynchronous probes,
+retries successful or indeterminate connections, and accepts only
+`ECONNREFUSED` as evidence that the port is closed. Timeout cleanup closes the
+outstanding client and timer, with a guard against late callbacks.
+
+Focused tests passed with pinned Plenary and local loopback access:
+commands 5/5 and session lifecycle 11/11. Regression coverage includes a
+callback delayed beyond one second, a transient error before refusal, and
+timeout cleanup. StyLua 2.6.0 and `git diff --check` passed. Read-only review
+found no actionable defects. The new hosted run is pending at this commit.
+
+### Hosted CI success after the fixes (2026-11-04)
+
+GitHub Actions run
+<https://github.com/TRJ89/jsoncrack-nvim/actions/runs/41775773045> completed
+with `success` on commit `81d0d354e7258d1584efbc8ea35d4e17eac7ac80`.
+All seven jobs succeeded: the full Neovim 0.11.6/Python 3.10 check and all six
+compatibility combinations of Neovim v0.11.0/stable/nightly with Python
+3.10/3.x. This verifies the setup, test bootstrap, and shutdown probe changes
+on hosted runners without skipping checks or narrowing the matrix.

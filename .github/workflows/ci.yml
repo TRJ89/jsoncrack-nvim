@@ -43,6 +43,8 @@ jobs:
 
       - name: Set up Neovim 0.11.6
         uses: rhysd/action-setup-vim@febef33995d6649302e9d88dda81e071b68f16a7 # v1.6.1
+        env:
+          TMPDIR: ${{ runner.temp }}
         with:
           neovim: true
           version: v0.11.6
@@ -125,6 +127,8 @@ jobs:
 
       - name: Set up Neovim ${{ matrix.neovim }}
         uses: rhysd/action-setup-vim@febef33995d6649302e9d88dda81e071b68f16a7 # v1.6.1
+        env:
+          TMPDIR: ${{ runner.temp }}
         with:
           neovim: true
           version: ${{ matrix.neovim }}
