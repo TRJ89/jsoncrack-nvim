@@ -714,3 +714,20 @@ The five package-specific attribution questions in `licensing-review.md`
 remain unresolved. GitHub private vulnerability reporting has not been
 enabled or verified through this local work, and hosted Actions results
 remain unverified. No push or publication was performed.
+
+### GitHub publication (2026-11-04)
+
+With the maintainer's explicit publication approval, the reviewed `main`
+commit `651172c` was pushed to the public repository
+<https://github.com/TRJ89/jsoncrack-nvim>. GitHub's API confirmed
+`private: false`, default branch `main`, and private vulnerability reporting
+`enabled: true`. Secret scanning and secret-scanning push protection were
+also confirmed enabled. The private reporting endpoint is
+<https://github.com/TRJ89/jsoncrack-nvim/security/advisories/new>.
+Notification delivery has not been tested by submitting a report.
+
+The initial hosted CI run was created at
+<https://github.com/TRJ89/jsoncrack-nvim/actions/runs/41769308857>.
+It was queued when this publication record was written; this entry does not
+claim that hosted CI passed. The earlier local test results remain recorded
+above. Publication did not infer or alter third-party copyright notices.
