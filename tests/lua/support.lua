@@ -4,6 +4,7 @@ local M = {}
 local tracked_buffers = {}
 local tracked_directories = {}
 local base_window = vim.api.nvim_get_current_win()
+local PORT_PROBE_INTERVAL_MS = 25
 
 function M.make_file(suffix, contents, special_name)
     local directory = vim.fn.tempname()
@@ -185,24 +186,69 @@ function M.http_request(port, token)
     return response.text
 end
 
-function M.port_is_closed(port)
-    local client = vim.uv.new_tcp()
-    local connected
-    client:connect(
-        "127.0.0.1",
-        port,
-        vim.schedule_wrap(function(err)
-            connected = err == nil
-            client:close()
+function M.await_port_closed(port, timeout, new_tcp)
+    local uv = vim.uv
+    local new_tcp_client = new_tcp or uv.new_tcp
+    local done, closed = false, false
+    local client
+    local retry_timer = uv.new_timer()
+
+    local function close(handle)
+        if handle and not handle:is_closing() then
+            handle:close()
+        end
+    end
+
+    local function cleanup()
+        if retry_timer and not retry_timer:is_closing() then
+            retry_timer:stop()
+            retry_timer:close()
+        end
+        close(client)
+        client = nil
+    end
+
+    local function finish(is_closed)
+        if done then
+            return
+        end
+        done = true
+        closed = is_closed
+        cleanup()
+    end
+
+    local probe
+    probe = function()
+        if done then
+            return
+        end
+
+        local current = new_tcp_client()
+        client = current
+        current:connect("127.0.0.1", port, function(err)
+            close(current)
+            if client == current then
+                client = nil
+            end
+            if done then
+                return
+            end
+            if err == "ECONNREFUSED" then
+                finish(true)
+            else
+                retry_timer:start(PORT_PROBE_INTERVAL_MS, 0, probe)
+            end
         end)
-    )
-    assert.is_true(
-        M.await(function()
-            return connected ~= nil
-        end, 1000),
-        "TCP connection probe did not complete"
-    )
-    return not connected
+    end
+
+    probe()
+    vim.wait(timeout or 1000, function()
+        return done
+    end, PORT_PROBE_INTERVAL_MS)
+    if not done then
+        finish(false)
+    end
+    return closed
 end
 
 function M.cleanup()

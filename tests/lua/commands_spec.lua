@@ -36,6 +36,64 @@ describe("jsoncrack commands", function()
         assert.are.equal("", vim.fn.maparg("\\jp", "n"))
     end)
 
+    it("waits for an explicit refusal after a slow probe and a transient error", function()
+        local outcomes = {
+            { delay = 1050 },
+            { delay = 10, error = "EHOSTUNREACH" },
+            { delay = 10, error = "ECONNREFUSED" },
+        }
+        local clients, attempts = {}, 0
+        local closed = support.await_port_closed(54321, 1800, function()
+            attempts = attempts + 1
+            local outcome = outcomes[attempts] or { delay = 0, error = "ECONNREFUSED" }
+            local client = { closing = false }
+            function client:is_closing()
+                return self.closing
+            end
+            function client:close()
+                self.closing = true
+            end
+            function client:connect(_, _, callback)
+                local timer = vim.uv.new_timer()
+                timer:start(outcome.delay, 0, function()
+                    timer:close()
+                    callback(outcome.error)
+                end)
+            end
+            clients[#clients + 1] = client
+            return client
+        end)
+
+        assert.is_true(closed)
+        assert.are.equal(3, attempts)
+        for _, client in ipairs(clients) do
+            assert.is_true(client.closing)
+        end
+    end)
+
+    it("closes an in-flight probe at the overall deadline", function()
+        local attempts, callback, client = 0, nil, nil
+        local closed = support.await_port_closed(54321, 20, function()
+            attempts = attempts + 1
+            client = { closing = false }
+            function client:is_closing()
+                return self.closing
+            end
+            function client:close()
+                self.closing = true
+            end
+            function client:connect(_, _, done)
+                callback = done
+            end
+            return client
+        end)
+
+        assert.is_false(closed)
+        assert.is_true(client.closing)
+        callback("ECONNREFUSED")
+        assert.are.equal(1, attempts)
+    end)
+
     it("stops the child when vim.ui.open reports a launch failure", function()
         local bufnr = support.file_buffer(".json", "{}")
         support.show(bufnr)
@@ -52,9 +110,7 @@ describe("jsoncrack commands", function()
         open_until_ready(opened)
         local port = tonumber(opened[1]:match("^http://127%.0%.0%.1:(%d+)/#token="))
         assert.is_truthy(port)
-        assert.is_true(support.await(function()
-            return support.port_is_closed(port)
-        end, 3000))
+        assert.is_true(support.await_port_closed(port, 3000))
         assert.are.equal(1, #notices)
     end)
 
@@ -70,8 +126,6 @@ describe("jsoncrack commands", function()
         local port = opened[1]:match("^http://127%.0%.0%.1:(%d+)/#token=")
         assert.is_truthy(port)
         vim.api.nvim_cmd({ cmd = "JsonCrackPreviewStop" }, {})
-        assert.is_true(support.await(function()
-            return support.port_is_closed(tonumber(port))
-        end, 3000))
+        assert.is_true(support.await_port_closed(tonumber(port), 3000))
     end)
 end)

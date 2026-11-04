@@ -762,3 +762,20 @@ check confirmed a newly named and edited normal buffer had `swapfile=false`
 and did not create a swap directory. Local full Lua execution was unavailable
 because the sibling Plenary checkout was absent; hosted tests will verify it.
 A read-only review found no actionable defects in these two scoped fixes.
+
+### Shutdown probe correction (2026-11-04)
+
+Run <https://github.com/TRJ89/jsoncrack-nvim/actions/runs/41774445539>
+confirmed the Neovim install fix and passed the full check. Two compatibility
+jobs exposed a separate test-helper problem: a one-second TCP probe inside
+an outer three-second shutdown wait could abort the entire check before its
+overall deadline. The helper now uses one deadline with asynchronous probes,
+retries successful or indeterminate connections, and accepts only
+`ECONNREFUSED` as evidence that the port is closed. Timeout cleanup closes the
+outstanding client and timer, with a guard against late callbacks.
+
+Focused tests passed with pinned Plenary and local loopback access:
+commands 5/5 and session lifecycle 11/11. Regression coverage includes a
+callback delayed beyond one second, a transient error before refusal, and
+timeout cleanup. StyLua 2.6.0 and `git diff --check` passed. Read-only review
+found no actionable defects. The new hosted run is pending at this commit.
