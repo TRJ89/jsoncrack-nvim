@@ -731,3 +731,34 @@ The initial hosted CI run was created at
 It was queued when this publication record was written; this entry does not
 claim that hosted CI passed. The earlier local test results remain recorded
 above. Publication did not infer or alter third-party copyright notices.
+
+### Neovim setup action EXDEV diagnosis (2026-11-04)
+
+Hosted run `41769349946` failed in the pinned `rhysd/action-setup-vim`
+Neovim install with `EXDEV` while moving the extracted `nvim-linux-x86_64`
+directory from `/tmp/action-setup-vim-*` to `/home/runner/nvim-v0.11.6`.
+At action commit
+[`febef339`](https://github.com/rhysd/action-setup-vim/tree/febef33995d6649302e9d88dda81e071b68f16a7),
+`TmpDir.create()` uses Node's `os.tmpdir()`, and `downloadNeovim()` moves the
+unarchived directory from that temporary location into the runner home. The
+workflow now sets `TMPDIR` to `${{ runner.temp }}` for both Neovim setup steps;
+GitHub documents the Linux value as `/home/runner/work/_temp`, keeping the
+action's temporary extraction on the runner's home filesystem instead of
+`/tmp`'s separate tmpfs. See the pinned
+[`neovim.js`](https://github.com/rhysd/action-setup-vim/blob/febef33995d6649302e9d88dda81e071b68f16a7/src/neovim.js)
+and [`system.js`](https://github.com/rhysd/action-setup-vim/blob/febef33995d6649302e9d88dda81e071b68f16a7/src/system.js)
+implementations and the
+[GitHub runner context reference](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#runner-context).
+
+The same cross-device rename reproduced locally with Node (`/tmp` is tmpfs;
+the project home is ext4) and succeeded when `TMPDIR` pointed under the home
+filesystem. The hosted rerun after this change is pending; no CI success is
+claimed until that run completes.
+
+The same run also exposed an intermittent Plenary failure creating the shared
+Neovim swap directory (`E303`, already exists). The test-only minimal init
+now disables swapfiles before test buffers are created. A clean-XDG headless
+check confirmed a newly named and edited normal buffer had `swapfile=false`
+and did not create a swap directory. Local full Lua execution was unavailable
+because the sibling Plenary checkout was absent; hosted tests will verify it.
+A read-only review found no actionable defects in these two scoped fixes.
