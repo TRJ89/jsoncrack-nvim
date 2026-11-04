@@ -779,3 +779,13 @@ commands 5/5 and session lifecycle 11/11. Regression coverage includes a
 callback delayed beyond one second, a transient error before refusal, and
 timeout cleanup. StyLua 2.6.0 and `git diff --check` passed. Read-only review
 found no actionable defects. The new hosted run is pending at this commit.
+
+### Hosted CI success after the fixes (2026-11-04)
+
+GitHub Actions run
+<https://github.com/TRJ89/jsoncrack-nvim/actions/runs/41775773045> completed
+with `success` on commit `81d0d354e7258d1584efbc8ea35d4e17eac7ac80`.
+All seven jobs succeeded: the full Neovim 0.11.6/Python 3.10 check and all six
+compatibility combinations of Neovim v0.11.0/stable/nightly with Python
+3.10/3.x. This verifies the setup, test bootstrap, and shutdown probe changes
+on hosted runners without skipping checks or narrowing the matrix.
