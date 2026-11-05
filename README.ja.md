@@ -132,6 +132,19 @@ OS、Neovim のバージョンと設定、利用目的を添えてください�
 リリース時の保守事項は
 [docs/development.md](docs/development.md) を参照してください。
 
+## 謝辞
+
+このプラグインのグラフ表示を支える [JSON Crack](https://jsoncrack.com/) と
+[`jsoncrack-react`](https://www.npmjs.com/package/jsoncrack-react) の開発者の皆さまに、
+心より感謝します。
+
+また、本プロジェクトは [React](https://github.com/facebook/react)、
+[`jsonc-parser`](https://github.com/microsoft/node-jsonc-parser)、
+[`yaml`](https://eemeli.org/yaml/)、[Reaflow](https://github.com/reaviz/reaflow)、
+[`elkjs`](https://github.com/kieler/elkjs) をはじめとするオープンソースパッケージに
+支えられています。開発・テスト用ツールも含め、これらを支えるメンテナーと
+コントリビューターの皆さまに感謝します。
+
 ## ライセンス
 
 プロジェクトのコードは MIT License で配布しています。[LICENSE](LICENSE) を

@@ -1,5 +1,6 @@
 AGENTS.md
 .agents/skills/
+/.nvimlog
 
 # Renderer test build, dependencies, and browser artifacts
 web/node_modules/

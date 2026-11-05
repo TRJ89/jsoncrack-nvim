@@ -131,6 +131,19 @@ Do not post vulnerability details in a public issue.
 Contributor setup, local-checkout loading, validation commands, and release
 maintenance notes are in [docs/development.md](docs/development.md).
 
+## Acknowledgements
+
+Special thanks to [JSON Crack](https://jsoncrack.com/) and the authors of
+[`jsoncrack-react`](https://www.npmjs.com/package/jsoncrack-react) for making the
+graph visualization used by this plugin available.
+
+This project also builds on [React](https://github.com/facebook/react),
+[`jsonc-parser`](https://github.com/microsoft/node-jsonc-parser),
+[`yaml`](https://eemeli.org/yaml/), [Reaflow](https://github.com/reaviz/reaflow),
+[`elkjs`](https://github.com/kieler/elkjs), and other open-source packages.
+Thank you to all their maintainers and contributors, including those behind the
+tools used to develop and test this plugin.
+
 ## License
 
 The project's code is distributed under the MIT License; see [LICENSE](LICENSE).
